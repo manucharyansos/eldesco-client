@@ -1,24 +1,21 @@
-import { useTranslations } from 'next-intl';
-import { Hero } from '@/components/sections/Hero';
-import { ServicesSection } from '@/components/sections/ServicesSection';
-import { ProjectsSection } from '@/components/sections/ProjectsSection';
-import { TeamSection } from '@/components/sections/TeamSection';
-import { Metadata } from 'next';
+import { PageRenderer } from '@/components/cms/PageRenderer';
+import { getPublicPage } from '@/lib/cms';
 
-export const metadata: Metadata = {
-  title: 'ELDESCO - Home',
-  description: 'Energy Infrastructure & Engineering Solutions',
-};
+export const dynamic = 'force-dynamic';
 
-export default function HomePage() {
-  const t = useTranslations('common');
-
-  return (
-    <>
-      <Hero />
-      <ServicesSection />
-      <ProjectsSection />
-      <TeamSection />
-    </>
-  );
+export default async function HomePage({ params }: { params: { locale: string } }) {
+  try {
+    const page = await getPublicPage('home');
+    return <PageRenderer page={page} locale={params.locale} />;
+  } catch {
+    return (
+      <section className="cms-hero">
+        <div className="shell cms-hero__content">
+          <span className="eyebrow">ELDESCO</span>
+          <h1>Energy infrastructure & engineering systems</h1>
+          <p className="cms-body">The CMS API is not available yet. Start the Laravel backend and run the database seed.</p>
+        </div>
+      </section>
+    );
+  }
 }
