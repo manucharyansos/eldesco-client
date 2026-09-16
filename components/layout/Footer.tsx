@@ -1,65 +1,56 @@
 'use client';
 
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
 
-interface FooterProps {
-  locale: string;
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
-export function Footer({ locale }: FooterProps) {
-  const t = useTranslations('common');
+export function Footer({ locale }: { locale: string }) {
+  const [settings, setSettings] = useState<any>({});
+
+  useEffect(() => {
+    fetch(`${API_URL}/site-settings`)
+      .then((r) => r.ok ? r.json() : {})
+      .then(setSettings)
+      .catch(() => undefined);
+  }, []);
+
+  const local = (value: any) => typeof value === 'string' ? value : value?.[locale] || value?.en || value?.hy || value?.ru || '';
+  const contact = settings.contact || {};
+  const navigation = Array.isArray(settings.navigation) ? settings.navigation : [];
 
   return (
-    <footer className="footer bg-primary-500 text-white mt-auto">
+    <footer className="footer">
       <div className="footer-container">
-        <div>
-          <h3 className="font-serif text-lg font-bold mb-4">{t('appName')}</h3>
-          <p className="text-sm text-gray-300">{t('tagline')}</p>
+        <div className="grid lg:grid-cols-[1.25fr_.75fr_.75fr] gap-12">
+          <div>
+            <div className="text-xs font-bold tracking-[.25em] text-orange-400 mb-4">ELDESCO</div>
+            <h3 className="text-4xl md:text-5xl font-serif max-w-xl leading-tight">
+              {locale === 'hy' ? 'Էներգետիկ ենթակառուցվածքներ և ինժեներական համակարգեր' : locale === 'ru' ? 'Энергетическая инфраструктура и инженерные системы' : 'Energy infrastructure & engineering systems'}
+            </h3>
+          </div>
+
+          <div>
+            <div className="text-xs uppercase tracking-[.2em] text-slate-500 mb-5">Navigation</div>
+            <div className="space-y-3 text-slate-300">
+              {navigation.slice(0, 6).map((item: any) => <Link key={item.slug} className="block hover:text-orange-400" href={`/${locale}/${item.slug}`}>{local(item.label)}</Link>)}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-xs uppercase tracking-[.2em] text-slate-500 mb-5">Contact</div>
+            <div className="space-y-3 text-slate-300">
+              <a className="block hover:text-orange-400" href={`tel:${contact.phone || '+37499694569'}`}>{contact.phone || '+374 99 694 569'}</a>
+              <a className="block hover:text-orange-400" href={`mailto:${contact.email || 'eldesco@eldesco.am'}`}>{contact.email || 'eldesco@eldesco.am'}</a>
+              <div>{local(contact.address) || 'Yerevan, Armenia'}</div>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <h4 className="font-bold mb-4">{t('contact')}</h4>
-          <p className="text-sm text-gray-300 mb-2">
-            <strong>{t('phone')}:</strong> +374 (10) 599-694-569
-          </p>
-          <p className="text-sm text-gray-300 mb-2">
-            <strong>{t('email')}:</strong> eldesco@eldesco.am
-          </p>
-          <p className="text-sm text-gray-300">
-            <strong>{t('address')}:</strong> Yerevan, Tbilisyan 35/9
-          </p>
+        <div className="border-t border-white/10 mt-14 pt-6 flex flex-wrap gap-4 items-center justify-between text-xs text-slate-500">
+          <span>© {new Date().getFullYear()} ELDESCO LLC</span>
+          <Link href="/admin/login" className="hover:text-slate-300">Admin</Link>
         </div>
-
-        <div>
-          <h4 className="font-bold mb-4">Quick Links</h4>
-          <ul className="space-y-2 text-sm">
-            <li>
-              <Link href={`/${locale}/services`} className="hover:text-accent-500">
-                {t('services')}
-              </Link>
-            </li>
-            <li>
-              <Link href={`/${locale}/projects`} className="hover:text-accent-500">
-                {t('projects')}
-              </Link>
-            </li>
-            <li>
-              <Link href={`/${locale}/team`} className="hover:text-accent-500">
-                {t('team')}
-              </Link>
-            </li>
-            <li>
-              <Link href={`/${locale}/news`} className="hover:text-accent-500">
-                {t('news')}
-              </Link>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="border-t border-primary-400 mt-8 pt-8 text-center text-sm text-gray-300">
-        <p>&copy; 2024 ELDESCO LLC. {t('footer.rights')}</p>
       </div>
     </footer>
   );
