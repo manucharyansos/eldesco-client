@@ -114,11 +114,13 @@ class ApiClient {
   }
 
   createProject(data: any) {
-    return this.client.post('/projects', data);
+    const config = data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
+    return this.client.post('/projects', data, config);
   }
 
   updateProject(id: number, data: any) {
-    return this.client.put(`/projects/${id}`, data);
+    const config = data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
+    return this.client.put(`/projects/${id}`, data, config);
   }
 
   deleteProject(id: number) {
