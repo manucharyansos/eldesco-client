@@ -1,35 +1,36 @@
 'use client';
 
-import { useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, type ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/auth/store';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { Loading } from '@/components/common/Loading';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
+  const isLogin = pathname === '/admin/login';
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    if (!isLogin) checkAuth();
+  }, [isLogin, checkAuth]);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/admin/login');
+    if (!isLogin && !isLoading && !isAuthenticated) {
+      router.replace('/admin/login');
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLogin, isLoading, isAuthenticated, router]);
 
+  if (isLogin) return <>{children}</>;
   if (isLoading) return <Loading />;
   if (!isAuthenticated) return null;
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-[#f5f6f8]">
       <AdminSidebar />
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">
-          {children}
-        </div>
+      <main className="flex-1 min-w-0 overflow-auto">
+        <div className="p-5 md:p-8 lg:p-10">{children}</div>
       </main>
     </div>
   );
