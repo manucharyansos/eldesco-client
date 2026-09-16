@@ -1,24 +1,37 @@
-import React from 'react';
 import type { ReactNode } from 'react';
-import { Navbar } from '@/components/layout/Navbar';
-import { Footer } from '@/components/layout/Footer';
+import { notFound } from 'next/navigation';
+import { getSite } from '@/lib/cms';
+import { SiteHeader } from '@/components/cms/SiteHeader';
+import { SiteFooter } from '@/components/cms/SiteFooter';
+import type { SitePayload } from '@/types/cms';
 
-type LocaleLayoutProps = {
-  children: ReactNode;
-  params: { locale: string };
-};
+const supported = ['hy', 'en', 'ru'] as const;
 
-export default function LocaleLayout({
-  children,
-  params: { locale },
-}: LocaleLayoutProps) {
+export default async function LocaleLayout({ children, params }: { children: ReactNode; params: { locale: string } }) {
+  if (!supported.includes(params.locale as any)) notFound();
+
+  let site: SitePayload;
+  try {
+    site = await getSite(params.locale);
+  } catch {
+    site = {
+      locale: params.locale as SitePayload['locale'],
+      supported_locales: ['hy', 'en', 'ru'],
+      settings: { 'site.name': 'ELDESCO' },
+      navigation: [
+        { id: 1, slug: 'home', title: params.locale === 'hy' ? 'Գլխավոր' : 'Home' },
+        { id: 2, slug: 'about', title: params.locale === 'hy' ? 'Մեր մասին' : 'About' },
+        { id: 3, slug: 'activities', title: params.locale === 'hy' ? 'Գործունեություն' : 'Activities' },
+        { id: 4, slug: 'contact', title: params.locale === 'hy' ? 'Կապ' : 'Contact' },
+      ],
+    };
+  }
+
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar locale={locale} />
-      <main className="flex-1">
-        {children}
-      </main>
-      <Footer locale={locale} />
+    <div className="site-frame">
+      <SiteHeader site={site} locale={params.locale} />
+      <main>{children}</main>
+      <SiteFooter site={site} locale={params.locale} />
     </div>
   );
 }
