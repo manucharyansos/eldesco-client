@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { Service } from '@/types';
@@ -9,7 +8,6 @@ import { ServiceCard } from '@/components/common/ServiceCard';
 import { Loading } from '@/components/common/Loading';
 
 export default function ServicesPage() {
-  const t = useTranslations('common');
   const params = useParams();
   const locale = params.locale as string;
   const [services, setServices] = useState<Service[]>([]);
@@ -28,21 +26,40 @@ export default function ServicesPage() {
         setLoading(false);
       }
     };
-
     fetchServices();
   }, [locale]);
 
-  if (loading) return <Loading />;
-  if (error) return <div className="text-center py-12 text-red-600">{error}</div>;
+  const title = locale === 'hy' ? 'Գործունեության ոլորտները' : locale === 'ru' ? 'Направления деятельности' : 'Areas of activity';
+  const subtitle = locale === 'hy'
+    ? 'Նախագծումից և արտադրությունից մինչև մոնտաժ ու ավտոմատացում՝ մեկ ինժեներական գործընկերոջ հետ։'
+    : locale === 'ru'
+      ? 'От проектирования и производства до монтажа и автоматизации — с одним инженерным партнером.'
+      : 'From design and production to installation and automation — with one engineering partner.';
 
   return (
-    <div className="container py-12">
-      <h1 className="text-4xl font-bold mb-12 text-center">{t('services')}</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {services.map((service) => (
-          <ServiceCard key={service.id} service={service} />
-        ))}
-      </div>
+    <div className="premium-page">
+      <section className="premium-page-hero">
+        <div className="premium-page-hero-glow" />
+        <div className="container relative z-10 py-24 md:py-32">
+          <div className="max-w-4xl animate-rise">
+            <p className="premium-eyebrow">ELDESCO • ENGINEERING</p>
+            <h1 className="premium-title mt-5 text-white">{title}</h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 md:text-xl">{subtitle}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-slate-50 py-16 md:py-24">
+        <div className="container">
+          {loading && <Loading />}
+          {error && <div className="premium-panel p-6 text-red-600">{error}</div>}
+          {!loading && !error && (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {services.map((service) => <ServiceCard key={service.id} service={service} />)}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
