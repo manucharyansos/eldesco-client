@@ -1,3 +1,7 @@
+'use client';
+
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { Project } from '@/types';
 
 interface ProjectCardProps {
@@ -5,26 +9,35 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
+  const params = useParams();
+  const locale = (params.locale as string) || 'hy';
+
   return (
-    <div className="bg-white rounded-lg shadow hover:shadow-lg transition overflow-hidden">
-      {project.image && (
-        <div className="relative w-full h-48 bg-gray-200 overflow-hidden">
+    <Link href={`/${locale}/projects/${project.id}`} className="group premium-card block overflow-hidden">
+      <div className="relative h-64 overflow-hidden bg-slate-900">
+        {project.image ? (
           <img
             src={project.image}
             alt={project.title}
-            className="w-full h-full object-cover hover:scale-105 transition"
+            className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
           />
-        </div>
-      )}
-      <div className="p-6">
-        <h3 className="font-serif text-xl font-bold mb-2">{project.title}</h3>
+        ) : (
+          <div className="absolute inset-0 premium-grid opacity-30" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
         {project.category && (
-          <span className="inline-block bg-accent-100 text-accent-700 text-xs font-semibold px-2 py-1 rounded mb-3">
+          <span className="absolute bottom-5 left-5 rounded-full bg-white/90 px-3 py-1 text-xs font-bold uppercase tracking-[.12em] text-slate-900 backdrop-blur">
             {project.category}
           </span>
         )}
-        <p className="text-gray-600 line-clamp-3">{project.description}</p>
       </div>
-    </div>
+      <div className="p-7">
+        <div className="flex items-start justify-between gap-5">
+          <h3 className="text-2xl font-bold leading-tight text-slate-950 transition group-hover:text-orange-600">{project.title}</h3>
+          <span className="mt-1 text-xl text-slate-400 transition group-hover:translate-x-1 group-hover:text-orange-600">→</span>
+        </div>
+        {project.description && <p className="mt-4 line-clamp-3 leading-7 text-slate-600">{project.description}</p>}
+      </div>
+    </Link>
   );
 }
