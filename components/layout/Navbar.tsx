@@ -2,9 +2,8 @@
 
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { useParams, useRouter } from 'next/navigation';
-import { useAuthStore } from '@/lib/auth/store';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 interface NavbarProps {
   locale: string;
@@ -12,9 +11,7 @@ interface NavbarProps {
 
 export function Navbar({ locale }: NavbarProps) {
   const t = useTranslations('common');
-  const params = useParams();
   const router = useRouter();
-  const { isAuthenticated, logout } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const languages = [
@@ -27,11 +24,6 @@ export function Navbar({ locale }: NavbarProps) {
     router.push(`/${lang}`);
   };
 
-  const handleLogout = async () => {
-    await logout();
-    router.push(`/${locale}`);
-  };
-
   return (
     <nav className="navbar sticky top-0 z-40 bg-white border-b border-gray-200">
       <div className="navbar-container">
@@ -40,7 +32,6 @@ export function Navbar({ locale }: NavbarProps) {
             {t('appName')}
           </Link>
 
-          {/* Desktop menu */}
           <div className="hidden md:flex gap-6">
             <Link href={`/${locale}/services`} className="hover:text-accent-500">
               {t('services')}
@@ -61,7 +52,6 @@ export function Navbar({ locale }: NavbarProps) {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Language switcher */}
           <div className="flex gap-2">
             {languages.map((lang) => (
               <button
@@ -78,60 +68,32 @@ export function Navbar({ locale }: NavbarProps) {
             ))}
           </div>
 
-          {/* Auth links */}
-          {isAuthenticated ? (
-            <button
-              onClick={handleLogout}
-              className="btn btn-secondary text-sm"
-            >
-              {t('logout')}
-            </button>
-          ) : (
-            <Link href={`/admin/login`} className="btn btn-primary text-sm">
-              {t('admin')}
-            </Link>
-          )}
-
-          {/* Mobile menu toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden text-2xl"
+            aria-label="Toggle navigation"
           >
             ☰
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-200 p-4 space-y-2">
-          <Link
-            href={`/${locale}/services`}
-            className="block py-2 hover:text-accent-500"
-            onClick={() => setMobileMenuOpen(false)}
-          >
+          <Link href={`/${locale}/services`} className="block py-2 hover:text-accent-500" onClick={() => setMobileMenuOpen(false)}>
             {t('services')}
           </Link>
-          <Link
-            href={`/${locale}/projects`}
-            className="block py-2 hover:text-accent-500"
-            onClick={() => setMobileMenuOpen(false)}
-          >
+          <Link href={`/${locale}/projects`} className="block py-2 hover:text-accent-500" onClick={() => setMobileMenuOpen(false)}>
             {t('projects')}
           </Link>
-          <Link
-            href={`/${locale}/team`}
-            className="block py-2 hover:text-accent-500"
-            onClick={() => setMobileMenuOpen(false)}
-          >
+          <Link href={`/${locale}/team`} className="block py-2 hover:text-accent-500" onClick={() => setMobileMenuOpen(false)}>
             {t('team')}
           </Link>
-          <Link
-            href={`/${locale}/news`}
-            className="block py-2 hover:text-accent-500"
-            onClick={() => setMobileMenuOpen(false)}
-          >
+          <Link href={`/${locale}/news`} className="block py-2 hover:text-accent-500" onClick={() => setMobileMenuOpen(false)}>
             {t('news')}
+          </Link>
+          <Link href={`/${locale}/gallery`} className="block py-2 hover:text-accent-500" onClick={() => setMobileMenuOpen(false)}>
+            Gallery
           </Link>
         </div>
       )}
