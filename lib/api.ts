@@ -93,6 +93,10 @@ class ApiClient {
     return this.client.get('/admin/pages');
   }
 
+  getAdminPage(id: number) {
+    return this.client.get(`/admin/pages/${id}`);
+  }
+
   createPage(data: unknown) {
     return this.client.post('/admin/pages', data);
   }
@@ -154,12 +158,11 @@ class ApiClient {
   }
 
   updateProject(id: number, data: unknown) {
-    return this.client.post(`/projects/${id}`, data, {
-      params: { _method: 'PUT' },
-      headers: typeof FormData !== 'undefined' && data instanceof FormData
-        ? { 'X-HTTP-Method-Override': 'PUT' }
-        : undefined,
-    });
+    if (typeof FormData !== 'undefined' && data instanceof FormData) {
+      data.set('_method', 'PUT');
+      return this.client.post(`/projects/${id}`, data);
+    }
+    return this.client.put(`/projects/${id}`, data);
   }
 
   deleteProject(id: number) {
