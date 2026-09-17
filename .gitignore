@@ -1,23 +1,38 @@
 # Next.js
-.next/
-node_modules/
-dist/
-build/
-
-# Environment
-.env
+.next
+/out
+*.local
 .env.local
 .env.*.local
+
+# Node
+node_modules/
+package-lock.json
+yarn.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
+# Build
+/dist
+/.next
+/out
+
+# Environment
+.env
+.env.production
+
+# Misc
+*.pem
+.turbo
