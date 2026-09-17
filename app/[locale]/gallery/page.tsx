@@ -1,15 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { GalleryImage } from '@/types';
 import { Loading } from '@/components/common/Loading';
-import Image from 'next/image';
 
 export default function GalleryPage() {
-  const t = useTranslations('common');
   const params = useParams();
   const locale = params.locale as string;
   const [images, setImages] = useState<GalleryImage[]>([]);
@@ -23,9 +20,11 @@ export default function GalleryPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const imagesRes = await apiClient.getGallery(locale);
-        const categoriesRes = await apiClient.getGalleryCategories();
-        
+        setError(null);
+        const [imagesRes, categoriesRes] = await Promise.all([
+          apiClient.getGallery(locale),
+          apiClient.getGalleryCategories(),
+        ]);
         setImages(imagesRes.data);
         setCategories(categoriesRes.data);
       } catch (err: any) {
@@ -34,83 +33,79 @@ export default function GalleryPage() {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [locale]);
 
-  const filtered = selectedCategory
-    ? images.filter(img => img.category === selectedCategory)
-    : images;
-
-  if (loading) return <Loading />;
-  if (error) return <div className="text-center py-12 text-red-600">{error}</div>;
+  const filtered = selectedCategory ? images.filter((img) => img.category === selectedCategory) : images;
+  const title = locale === 'hy' ? 'Պատկերասրահ' : locale === 'ru' ? 'Галерея' : 'Gallery';
+  const all = locale === 'hy' ? 'Բոլորը' : locale === 'ru' ? 'Все' : 'All';
 
   return (
-    <div className="container py-12">
-      <h1 className="text-4xl font-bold mb-8 text-center">Gallery</h1>
-
-      {/* Category filter */}
-      <div className="flex flex-wrap gap-2 mb-8 justify-center">
-        <button
-          onClick={() => setSelectedCategory(null)}
-          className={`px-4 py-2 rounded ${
-            selectedCategory === null
-              ? 'bg-accent-500 text-white'
-              : 'bg-gray-200 hover:bg-gray-300'
-          }`}
-        >
-          All
-        </button>
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
-            className={`px-4 py-2 rounded ${
-              selectedCategory === cat
-                ? 'bg-accent-500 text-white'
-                : 'bg-gray-200 hover:bg-gray-300'
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {/* Gallery grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((image) => (
-          <div
-            key={image.id}
-            className="cursor-pointer hover:opacity-75 transition"
-            onClick={() => setSelectedImage(image)}
-          >
-            <img
-              src={image.image}
-              alt={image.title || 'Gallery image'}
-              className="w-full h-48 object-cover rounded"
-            />
+    <div className="premium-page">
+      <section className="premium-page-hero">
+        <div className="premium-page-hero-glow" />
+        <div className="container relative z-10 py-24 md:py-32">
+          <div className="max-w-4xl animate-rise">
+            <p className="premium-eyebrow">ELDESCO • FIELD WORK</p>
+            <h1 className="premium-title mt-5 text-white">{title}</h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+              {locale === 'hy'
+                ? 'Իրականացված աշխատանքներ, արտադրական հանգույցներ և ինժեներական համակարգեր։'
+                : locale === 'ru'
+                  ? 'Реализованные работы, производственные узлы и инженерные системы.'
+                  : 'Delivered work, industrial installations and engineering systems.'}
+            </p>
           </div>
-        ))}
-      </div>
+        </div>
+      </section>
 
-      {/* Lightbox modal */}
+      <section className="bg-slate-50 py-16 md:py-24">
+        <div className="container">
+          <div className="mb-10 flex flex-wrap gap-2">
+            <button onClick={() => setSelectedCategory(null)} className={`rounded-full px-5 py-2 text-sm font-bold transition ${selectedCategory === null ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:border-orange-300 hover:text-orange-600'}`}>{all}</button>
+            {categories.map((cat) => (
+              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`rounded-full px-5 py-2 text-sm font-bold transition ${selectedCategory === cat ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:border-orange-300 hover:text-orange-600'}`}>{cat}</button>
+            ))}
+          </div>
+
+          {loading && <Loading />}
+          {error && <div className="premium-panel p-6 text-red-600">{error}</div>}
+
+          {!loading && !error && filtered.length === 0 && (
+            <div className="premium-panel p-10 text-center text-slate-500">No gallery items yet.</div>
+          )}
+
+          {!loading && !error && filtered.length > 0 && (
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((image, index) => (
+                <button
+                  key={image.id}
+                  type="button"
+                  onClick={() => setSelectedImage(image)}
+                  className={`group premium-card overflow-hidden text-left ${index % 5 === 0 ? 'md:col-span-2' : ''}`}
+                >
+                  <div className={`${index % 5 === 0 ? 'h-80 md:h-[420px]' : 'h-72'} overflow-hidden bg-slate-200`}>
+                    <img src={image.image} alt={image.title || 'ELDESCO work'} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                  </div>
+                  <div className="flex items-center justify-between gap-4 p-5">
+                    <div>
+                      {image.category && <div className="text-xs font-bold uppercase tracking-[.18em] text-orange-600">{image.category}</div>}
+                      {image.title && <div className="mt-2 font-semibold text-slate-900">{image.title}</div>}
+                    </div>
+                    <span className="text-xl text-slate-400 transition group-hover:translate-x-1 group-hover:text-orange-600">↗</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
       {selectedImage && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className="relative max-w-3xl max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={selectedImage.image}
-              alt={selectedImage.title || 'Image'}
-              className="max-w-full max-h-[80vh]"
-            />
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 bg-white text-black w-8 h-8 rounded-full flex items-center justify-center"
-            >
-              ✕
-            </button>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/90 p-4 backdrop-blur-md" onClick={() => setSelectedImage(null)}>
+          <div className="relative max-h-[90vh] max-w-6xl overflow-hidden rounded-2xl bg-black shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <img src={selectedImage.image} alt={selectedImage.title || 'ELDESCO work'} className="max-h-[86vh] max-w-full object-contain" />
+            <button type="button" onClick={() => setSelectedImage(null)} className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-2xl text-slate-950 shadow">×</button>
           </div>
         </div>
       )}
