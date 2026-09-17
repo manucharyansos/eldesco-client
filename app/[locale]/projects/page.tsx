@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { Project } from '@/types';
@@ -9,7 +8,6 @@ import { ProjectCard } from '@/components/common/ProjectCard';
 import { Loading } from '@/components/common/Loading';
 
 export default function ProjectsPage() {
-  const t = useTranslations('common');
   const params = useParams();
   const locale = params.locale as string;
   const [projects, setProjects] = useState<Project[]>([]);
@@ -28,21 +26,40 @@ export default function ProjectsPage() {
         setLoading(false);
       }
     };
-
     fetchProjects();
   }, [locale]);
 
-  if (loading) return <Loading />;
-  if (error) return <div className="text-center py-12 text-red-600">{error}</div>;
+  const title = locale === 'hy' ? 'Նախագծեր' : locale === 'ru' ? 'Проекты' : 'Projects';
+  const subtitle = locale === 'hy'
+    ? 'Իրականացված ինժեներական լուծումներ՝ էներգետիկայից մինչև արտադրական ենթակառուցվածքներ։'
+    : locale === 'ru'
+      ? 'Реализованные инженерные решения — от энергетики до производственной инфраструктуры.'
+      : 'Delivered engineering solutions — from power infrastructure to industrial systems.';
 
   return (
-    <div className="container py-12">
-      <h1 className="text-4xl font-bold mb-12 text-center">{t('projects')}</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {projects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
-      </div>
+    <div className="premium-page">
+      <section className="premium-page-hero">
+        <div className="premium-page-hero-glow" />
+        <div className="container relative z-10 py-24 md:py-32">
+          <div className="max-w-4xl animate-rise">
+            <p className="premium-eyebrow">ELDESCO • PORTFOLIO</p>
+            <h1 className="premium-title mt-5 text-white">{title}</h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 md:text-xl">{subtitle}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-slate-50 py-16 md:py-24">
+        <div className="container">
+          {loading && <Loading />}
+          {error && <div className="premium-panel p-6 text-red-600">{error}</div>}
+          {!loading && !error && (
+            <div className="grid gap-6 md:grid-cols-2">
+              {projects.map((project) => <ProjectCard key={project.id} project={project} />)}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
