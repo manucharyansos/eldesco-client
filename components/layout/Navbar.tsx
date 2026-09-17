@@ -1,102 +1,111 @@
 'use client';
 
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface NavbarProps {
   locale: string;
 }
 
+const label = (locale: string, hy: string, en: string, ru: string) =>
+  locale === 'hy' ? hy : locale === 'ru' ? ru : en;
+
 export function Navbar({ locale }: NavbarProps) {
-  const t = useTranslations('common');
   const router = useRouter();
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'hy', name: 'Հայերեն' },
-    { code: 'ru', name: 'Русский' },
+  const nav = [
+    { href: 'about', text: label(locale, 'Մեր մասին', 'About', 'О нас') },
+    { href: 'services', text: label(locale, 'Ծառայություններ', 'Services', 'Услуги') },
+    { href: 'projects', text: label(locale, 'Նախագծեր', 'Projects', 'Проекты') },
+    { href: 'gallery', text: label(locale, 'Պատկերասրահ', 'Gallery', 'Галерея') },
+    { href: 'contact', text: label(locale, 'Կապ մեզ հետ', 'Contact', 'Контакты') },
   ];
 
   const switchLanguage = (lang: string) => {
-    router.push(`/${lang}`);
+    const segments = pathname.split('/').filter(Boolean);
+    if (['hy', 'en', 'ru'].includes(segments[0])) segments[0] = lang;
+    else segments.unshift(lang);
+    router.push(`/${segments.join('/')}`);
   };
 
   return (
-    <nav className="navbar sticky top-0 z-40 bg-white border-b border-gray-200">
-      <div className="navbar-container">
-        <div className="flex items-center gap-8">
-          <Link href={`/${locale}`} className="font-serif text-2xl font-bold text-primary-500">
-            {t('appName')}
-          </Link>
+    <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
+      <div className="container flex h-[82px] items-center justify-between gap-6">
+        <Link href={`/${locale}`} className="group flex items-center" aria-label="ELDESCO home">
+          <img
+            src="/images/brand/eldesco-logo.png"
+            alt="ELDESCO"
+            className="h-16 w-auto max-w-[145px] object-contain transition duration-300 group-hover:scale-[1.02]"
+          />
+        </Link>
 
-          <div className="hidden md:flex gap-6">
-            <Link href={`/${locale}/services`} className="hover:text-accent-500">
-              {t('services')}
+        <nav className="hidden items-center gap-7 lg:flex">
+          {nav.map((item) => (
+            <Link
+              key={item.href}
+              href={`/${locale}/${item.href}`}
+              className="relative py-2 text-sm font-semibold text-slate-700 transition hover:text-slate-950 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-orange-500 after:transition-all hover:after:w-full"
+            >
+              {item.text}
             </Link>
-            <Link href={`/${locale}/projects`} className="hover:text-accent-500">
-              {t('projects')}
-            </Link>
-            <Link href={`/${locale}/team`} className="hover:text-accent-500">
-              {t('team')}
-            </Link>
-            <Link href={`/${locale}/news`} className="hover:text-accent-500">
-              {t('news')}
-            </Link>
-            <Link href={`/${locale}/gallery`} className="hover:text-accent-500">
-              Gallery
-            </Link>
-          </div>
-        </div>
+          ))}
+        </nav>
 
-        <div className="flex items-center gap-4">
-          <div className="flex gap-2">
-            {languages.map((lang) => (
+        <div className="flex items-center gap-3">
+          <div className="hidden rounded-full border border-slate-200 bg-slate-50 p-1 sm:flex">
+            {['hy', 'en', 'ru'].map((lang) => (
               <button
-                key={lang.code}
-                onClick={() => switchLanguage(lang.code)}
-                className={`px-2 py-1 text-sm rounded ${
-                  locale === lang.code
-                    ? 'bg-accent-500 text-white'
-                    : 'bg-gray-100 hover:bg-gray-200'
+                key={lang}
+                onClick={() => switchLanguage(lang)}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                  locale === lang ? 'bg-slate-950 text-white shadow' : 'text-slate-500 hover:text-slate-950'
                 }`}
               >
-                {lang.code.toUpperCase()}
+                {lang.toUpperCase()}
               </button>
             ))}
           </div>
 
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-2xl"
+            onClick={() => setMobileMenuOpen((value) => !value)}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-xl text-slate-900 lg:hidden"
             aria-label="Toggle navigation"
           >
-            ☰
+            {mobileMenuOpen ? '×' : '☰'}
           </button>
         </div>
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200 p-4 space-y-2">
-          <Link href={`/${locale}/services`} className="block py-2 hover:text-accent-500" onClick={() => setMobileMenuOpen(false)}>
-            {t('services')}
-          </Link>
-          <Link href={`/${locale}/projects`} className="block py-2 hover:text-accent-500" onClick={() => setMobileMenuOpen(false)}>
-            {t('projects')}
-          </Link>
-          <Link href={`/${locale}/team`} className="block py-2 hover:text-accent-500" onClick={() => setMobileMenuOpen(false)}>
-            {t('team')}
-          </Link>
-          <Link href={`/${locale}/news`} className="block py-2 hover:text-accent-500" onClick={() => setMobileMenuOpen(false)}>
-            {t('news')}
-          </Link>
-          <Link href={`/${locale}/gallery`} className="block py-2 hover:text-accent-500" onClick={() => setMobileMenuOpen(false)}>
-            Gallery
-          </Link>
+        <div className="border-t border-slate-200 bg-white px-4 py-5 shadow-xl lg:hidden">
+          <div className="container space-y-1">
+            {nav.map((item) => (
+              <Link
+                key={item.href}
+                href={`/${locale}/${item.href}`}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block rounded-xl px-4 py-3 font-semibold text-slate-800 transition hover:bg-slate-50 hover:text-orange-600"
+              >
+                {item.text}
+              </Link>
+            ))}
+            <div className="flex gap-2 px-4 pt-4 sm:hidden">
+              {['hy', 'en', 'ru'].map((lang) => (
+                <button
+                  key={lang}
+                  onClick={() => switchLanguage(lang)}
+                  className={`rounded-full px-4 py-2 text-xs font-bold ${locale === lang ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-600'}`}
+                >
+                  {lang.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
-    </nav>
+    </header>
   );
 }
