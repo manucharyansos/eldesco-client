@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { CmsSection } from '@/lib/api';
 import { serviceCatalog } from '@/lib/serviceCatalog';
+import { CustomersMarquee } from '@/components/sections/CustomersMarquee';
 
 const text = (value: unknown) => (typeof value === 'string' ? value : '');
 const list = (value: unknown) => (Array.isArray(value) ? value : []);
@@ -15,6 +16,14 @@ function localizedHref(url: string, locale: string) {
 function serviceHref(index: number, locale: string) {
   const item = serviceCatalog[index + 1];
   return item ? `/${locale}/services/${item.slug}` : `/${locale}/services`;
+}
+
+function servicesHeading(locale: string, original: string) {
+  const seeded = ['Հինգ հիմնական ուղղություն', 'Five core directions', 'Пять основных направлений'];
+  if (!original || seeded.includes(original)) {
+    return locale === 'hy' ? 'Հիմնական ուղղություններ' : locale === 'ru' ? 'Основные направления' : 'Core directions';
+  }
+  return original;
 }
 
 export function SectionRenderer({ section, locale }: { section: CmsSection; locale: string }) {
@@ -65,7 +74,7 @@ export function SectionRenderer({ section, locale }: { section: CmsSection; loca
       <section className="bg-slate-50 py-20 md:py-28">
         <div className="container">
           <p className="premium-eyebrow text-orange-600">{text(c.eyebrow) || 'ELDESCO'}</p>
-          <h2 className="mt-3 max-w-3xl text-4xl font-bold text-slate-950 md:text-5xl">{text(c.title)}</h2>
+          <h2 className="mt-3 max-w-3xl text-4xl font-bold text-slate-950 md:text-5xl">{servicesHeading(locale, text(c.title))}</h2>
           <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {list(c.items).map((item, index) => {
               const value = item as Record<string, unknown>;
@@ -135,20 +144,7 @@ export function SectionRenderer({ section, locale }: { section: CmsSection; loca
   }
 
   if (section.type === 'customers') {
-    return (
-      <section className="bg-slate-50 py-20 md:py-28">
-        <div className="container">
-          <p className="premium-eyebrow text-orange-600">TRUST</p>
-          <h2 className="mt-4 text-4xl font-bold text-slate-950 md:text-5xl">{text(c.title)}</h2>
-          <div className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {list(c.items).map((item, index) => {
-              const value = item as Record<string, unknown>;
-              return <div key={index} className="premium-panel flex min-h-24 items-center justify-center px-4 py-5 text-center text-sm font-semibold text-slate-700 transition hover:-translate-y-1 hover:border-orange-200">{text(value.name)}</div>;
-            })}
-          </div>
-        </div>
-      </section>
-    );
+    return <CustomersMarquee title={text(c.title)} locale={locale} />;
   }
 
   if (section.type === 'company_details') {
