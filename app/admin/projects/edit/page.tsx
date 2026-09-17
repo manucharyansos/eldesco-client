@@ -1,279 +1,111 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
-import { Button } from '@/components/common/Button';
-import { Loading } from '@/components/common/Loading';
+
+type Lang = 'hy' | 'en' | 'ru';
+const langLabel: Record<Lang, string> = { hy: 'Հայերեն', en: 'English', ru: 'Русский' };
+const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api').replace(/\/api\/?$/, '');
+const displayImage = (url?: string | null) => url?.startsWith('/storage/') ? `${API_ORIGIN}${url}` : (url || '');
 
 export default function AdminProjectEditPage() {
   const router = useRouter();
-  const params = useParams();
-  const projectId = params.id as string;
-  const isEditMode = projectId && projectId !== 'new';
+  const params = useParams<{ id?: string }>();
+  const projectId = params.id || 'new';
+  const isEditMode = projectId !== 'new';
 
   const [loading, setLoading] = useState(isEditMode);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
-
-  const [formData, setFormData] = useState({
-    title_hy: '',
-    title_en: '',
-    title_ru: '',
-    description_hy: '',
-    description_en: '',
-    description_ru: '',
-    category: '',
-    featured: false,
-    order_index: 0,
+  const [lang, setLang] = useState<Lang>('hy');
+  const [image, setImage] = useState<File | null>(null);
+  const [form, setForm] = useState({
+    title_hy: '', title_en: '', title_ru: '',
+    description_hy: '', description_en: '', description_ru: '',
+    category: '', featured: false, order_index: 0,
   });
 
-  const [image, setImage] = useState<File | null>(null);
-
   useEffect(() => {
-    if (isEditMode && projectId !== 'new') {
-      fetchProject();
-    }
-  }, [projectId, isEditMode]);
+    if (!isEditMode) return;
+    const load = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.getAdminProject(Number(projectId));
+        const p = response.data;
+        setForm({
+          title_hy: p.title_hy || '', title_en: p.title_en || '', title_ru: p.title_ru || '',
+          description_hy: p.description_hy || '', description_en: p.description_en || '', description_ru: p.description_ru || '',
+          category: p.category || '', featured: Boolean(p.featured), order_index: p.order_index || 0,
+        });
+        if (p.image_url) setPreview(displayImage(p.image_url));
+      } catch { setError('Նախագիծը չհաջողվեց բեռնել։'); }
+      finally { setLoading(false); }
+    };
+    void load();
+  }, [isEditMode, projectId]);
 
-  const fetchProject = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.getProject(parseInt(projectId), 'en');
-      setFormData({
-        title_hy: response.data.title_hy || '',
-        title_en: response.data.title_en || '',
-        title_ru: response.data.title_ru || '',
-        description_hy: response.data.description_hy || '',
-        description_en: response.data.description_en || '',
-        description_ru: response.data.description_ru || '',
-        category: response.data.category || '',
-        featured: response.data.featured || false,
-        order_index: response.data.order_index || 0,
-      });
-      if (response.data.image_url) {
-        setPreview(response.data.image_url);
-      }
-    } catch (err: any) {
-      setError('Failed to load project');
-    } finally {
-      setLoading(false);
-    }
+  const chooseImage = (file?: File) => {
+    if (!file) return;
+    setImage(file);
+    const reader = new FileReader();
+    reader.onload = () => setPreview(String(reader.result || ''));
+    reader.readAsDataURL(file);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImage(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value, type } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setError('');
+    if (!form.title_hy.trim() || !form.title_en.trim()) { setError('Հայերեն և անգլերեն վերնագրերը պարտադիր են։'); return; }
     setSubmitting(true);
-
     try {
-      const submitData = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        submitData.append(key, String(value));
-      });
-      if (image) {
-        submitData.append('image', image);
-      }
-
-      if (isEditMode && projectId !== 'new') {
-        await apiClient.updateProject(parseInt(projectId), submitData);
-      } else {
-        await apiClient.createProject(submitData);
-      }
-
-      router.push('/admin/projects');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save project');
-    } finally {
-      setSubmitting(false);
-    }
+      const data = new FormData();
+      data.append('title_hy', form.title_hy); data.append('title_en', form.title_en); data.append('title_ru', form.title_ru);
+      data.append('description_hy', form.description_hy); data.append('description_en', form.description_en); data.append('description_ru', form.description_ru);
+      data.append('category', form.category); data.append('featured', form.featured ? '1' : '0'); data.append('order_index', String(form.order_index));
+      if (image) data.append('image', image);
+      if (isEditMode) await apiClient.updateProject(Number(projectId), data); else await apiClient.createProject(data);
+      router.push('/admin/projects'); router.refresh();
+    } catch (err: any) { setError(err.response?.data?.message || 'Նախագիծը չհաջողվեց պահպանել։'); }
+    finally { setSubmitting(false); }
   };
 
-  if (loading) return <Loading />;
+  if (loading) return <div className="rounded-[28px] border border-slate-200 bg-white p-10 text-sm text-slate-500">Բեռնվում է…</div>;
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-4xl font-serif font-bold mb-8">
-        {isEditMode ? 'Edit Project' : 'Create Project'}
-      </h1>
+    <div className="mx-auto max-w-6xl space-y-7">
+      <div className="flex flex-wrap items-end justify-between gap-5">
+        <div><p className="text-[11px] font-extrabold uppercase tracking-[.24em] text-orange-600">Նախագծերի կառավարում</p><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{isEditMode ? 'Խմբագրել նախագիծը' : 'Նոր նախագիծ'}</h2></div>
+        <button onClick={() => router.push('/admin/projects')} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700">← Վերադառնալ</button>
+      </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-8 space-y-6">
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
+      {error && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
 
-        {/* Image Upload */}
-        <div>
-          <label className="block text-sm font-semibold mb-2">Project Image</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-          />
-          {preview && (
-            <div className="mt-4">
-              <img
-                src={preview}
-                alt="Preview"
-                className="max-w-xs h-auto rounded-lg"
-              />
+      <form onSubmit={submit} className="grid gap-6 xl:grid-cols-[.68fr_1.32fr]">
+        <aside className="space-y-6">
+          <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="overflow-hidden rounded-2xl bg-slate-100">
+              {preview ? <img src={preview} alt="Preview" className="h-64 w-full object-cover" /> : <div className="flex h-64 items-center justify-center bg-[#08111f] text-center text-sm font-bold text-slate-400">Նախագծի նկար<br/>չի ընտրված</div>}
             </div>
-          )}
-        </div>
+            <label className="mt-4 flex cursor-pointer items-center justify-center rounded-2xl border border-dashed border-slate-300 px-4 py-4 text-sm font-extrabold text-slate-700 transition hover:border-orange-400 hover:bg-orange-50"><span>{image ? image.name : 'Ընտրել / փոխել նկարը'}</span><input type="file" accept="image/*" className="hidden" onChange={(e) => chooseImage(e.target.files?.[0])} /></label>
+            <p className="mt-3 text-center text-[11px] text-slate-400">JPG, PNG, WEBP · մինչև 10MB</p>
+          </section>
 
-        {/* Title Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-semibold mb-2">Title (Armenian)*</label>
-            <input
-              type="text"
-              name="title_hy"
-              value={formData.title_hy}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Title (English)*</label>
-            <input
-              type="text"
-              name="title_en"
-              value={formData.title_en}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Title (Russian)</label>
-            <input
-              type="text"
-              name="title_ru"
-              value={formData.title_ru}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
-            />
-          </div>
-        </div>
+          <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+            <label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Կատեգորիա</span><input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-orange-400" placeholder="Power Infrastructure" /></label>
+            <label className="mt-5 block"><span className="mb-2 block text-sm font-bold text-slate-700">Հերթականություն</span><input type="number" value={form.order_index} onChange={(e) => setForm({ ...form, order_index: Number(e.target.value) })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-orange-400" /></label>
+            <label className="mt-5 flex items-center gap-3 rounded-2xl bg-orange-50 px-4 py-3"><input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} className="h-4 w-4 accent-orange-500"/><span className="text-sm font-bold text-slate-700">Ցուցադրել որպես առաջարկվող նախագիծ</span></label>
+          </section>
+        </aside>
 
-        {/* Description Fields */}
-        <div className="grid grid-cols-1 gap-4">
-          <div>
-            <label className="block text-sm font-semibold mb-2">Description (Armenian)</label>
-            <textarea
-              name="description_hy"
-              value={formData.description_hy}
-              onChange={handleChange}
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
-            />
+        <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex rounded-xl bg-slate-100 p-1">{(['hy','en','ru'] as Lang[]).map((item) => <button key={item} type="button" onClick={() => setLang(item)} className={`flex-1 rounded-lg px-3 py-2.5 text-xs font-bold transition ${lang === item ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500'}`}>{langLabel[item]}</button>)}</div>
+          <div className="mt-7 space-y-6">
+            <label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Վերնագիր · {langLabel[lang]}</span><input value={form[`title_${lang}`]} onChange={(e) => setForm({ ...form, [`title_${lang}`]: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100" /></label>
+            <label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Մանրամասն նկարագրություն · {langLabel[lang]}</span><textarea value={form[`description_${lang}`]} onChange={(e) => setForm({ ...form, [`description_${lang}`]: e.target.value })} rows={14} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm leading-7 outline-none focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100" /></label>
           </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Description (English)</label>
-            <textarea
-              name="description_en"
-              value={formData.description_en}
-              onChange={handleChange}
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Description (Russian)</label>
-            <textarea
-              name="description_ru"
-              value={formData.description_ru}
-              onChange={handleChange}
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Category and Status */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-semibold mb-2">Category</label>
-            <input
-              type="text"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              placeholder="e.g., Infrastructure"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Order Index</label>
-            <input
-              type="number"
-              name="order_index"
-              value={formData.order_index}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
-            />
-          </div>
-          <div className="flex items-end">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                name="featured"
-                checked={formData.featured}
-                onChange={handleChange}
-                className="w-4 h-4"
-              />
-              <span className="text-sm font-semibold">Featured</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Buttons */}
-        <div className="flex gap-4 pt-6 border-t">
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={submitting}
-            className="flex-1"
-          >
-            {submitting ? 'Saving...' : 'Save Project'}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => router.push('/admin/projects')}
-            disabled={submitting}
-            className="flex-1"
-          >
-            Cancel
-          </Button>
-        </div>
+          <div className="mt-8 flex gap-3 border-t border-slate-100 pt-6"><button type="button" onClick={() => router.push('/admin/projects')} className="flex-1 rounded-2xl border border-slate-200 px-5 py-3.5 text-sm font-bold text-slate-700">Չեղարկել</button><button type="submit" disabled={submitting} className="flex-1 rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-extrabold text-white transition hover:bg-orange-500 disabled:opacity-50">{submitting ? 'Պահպանվում է…' : 'Պահպանել նախագիծը'}</button></div>
+        </section>
       </form>
     </div>
   );
