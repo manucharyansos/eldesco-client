@@ -1,24 +1,26 @@
-import { useTranslations } from 'next-intl';
 import { Hero } from '@/components/sections/Hero';
 import { ServicesSection } from '@/components/sections/ServicesSection';
 import { ProjectsSection } from '@/components/sections/ProjectsSection';
 import { TeamSection } from '@/components/sections/TeamSection';
-import { Metadata } from 'next';
+import { SectionRenderer } from '@/components/cms/SectionRenderer';
+import type { CmsPage } from '@/lib/api';
 
-export const metadata: Metadata = {
-  title: 'ELDESCO - Home',
-  description: 'Energy Infrastructure & Engineering Solutions',
-};
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
-export default function HomePage() {
-  const t = useTranslations('common');
+async function getHome(locale: string): Promise<CmsPage | null> {
+  try {
+    const response = await fetch(`${API_URL}/pages/home?lang=${locale}`, { next: { revalidate: 60 } });
+    if (!response.ok) return null;
+    const json = await response.json();
+    return json.data ?? json;
+  } catch { return null; }
+}
 
-  return (
-    <>
-      <Hero />
-      <ServicesSection />
-      <ProjectsSection />
-      <TeamSection />
-    </>
-  );
+export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const page = await getHome(locale);
+
+  if (!page?.sections?.length) return <><Hero /><ServicesSection /><ProjectsSection /><TeamSection /></>;
+
+  return <main>{page.sections.sort((a, b) => a.sort_order - b.sort_order).map((section) => <SectionRenderer key={section.id} section={section} locale={locale} />)}</main>;
 }
