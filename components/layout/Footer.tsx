@@ -7,59 +7,54 @@ interface FooterProps {
   locale: string;
 }
 
+const addresses: Record<string, string> = {
+  hy: 'ՀՀ, ք․ Երևան, Թբիլիսյան 35/9',
+  en: '35/9 Tbilisyan Hwy, Yerevan, Armenia',
+  ru: 'Армения, Ереван, Тбилисское шоссе 35/9',
+};
+
 export function Footer({ locale }: FooterProps) {
-  const t = useTranslations('common');
+  const common = useTranslations('common');
+  const footer = useTranslations('footer');
+  const year = new Date().getFullYear();
 
   return (
-    <footer className="footer bg-primary-500 text-white mt-auto">
-      <div className="footer-container">
+    <footer className="mt-auto bg-primary-500 text-white">
+      <div className="footer-container grid gap-10 py-12 md:grid-cols-3">
         <div>
-          <h3 className="font-serif text-lg font-bold mb-4">{t('appName')}</h3>
-          <p className="text-sm text-gray-300">{t('tagline')}</p>
+          <h3 className="mb-4 font-serif text-xl font-bold">{common('appName')}</h3>
+          <p className="max-w-sm text-sm leading-6 text-gray-300">{common('tagline')}</p>
         </div>
 
         <div>
-          <h4 className="font-bold mb-4">{t('contact')}</h4>
-          <p className="text-sm text-gray-300 mb-2">
-            <strong>{t('phone')}:</strong> +374 (10) 599-694-569
-          </p>
-          <p className="text-sm text-gray-300 mb-2">
-            <strong>{t('email')}:</strong> eldesco@eldesco.am
-          </p>
-          <p className="text-sm text-gray-300">
-            <strong>{t('address')}:</strong> Yerevan, Tbilisyan 35/9
-          </p>
+          <h4 className="mb-4 font-bold">{common('contact')}</h4>
+          <div className="space-y-2 text-sm text-gray-300">
+            <p>
+              <strong>{footer('phone')}:</strong>{' '}
+              <a className="hover:text-accent-500" href="tel:+37499694569">+374 99 694 569</a>
+            </p>
+            <p>
+              <strong>{footer('email')}:</strong>{' '}
+              <a className="hover:text-accent-500" href="mailto:eldesco@eldesco.am">eldesco@eldesco.am</a>
+            </p>
+            <p><strong>{footer('address')}:</strong> {addresses[locale] ?? addresses.hy}</p>
+          </div>
         </div>
 
         <div>
-          <h4 className="font-bold mb-4">Quick Links</h4>
-          <ul className="space-y-2 text-sm">
-            <li>
-              <Link href={`/${locale}/services`} className="hover:text-accent-500">
-                {t('services')}
-              </Link>
-            </li>
-            <li>
-              <Link href={`/${locale}/projects`} className="hover:text-accent-500">
-                {t('projects')}
-              </Link>
-            </li>
-            <li>
-              <Link href={`/${locale}/team`} className="hover:text-accent-500">
-                {t('team')}
-              </Link>
-            </li>
-            <li>
-              <Link href={`/${locale}/news`} className="hover:text-accent-500">
-                {t('news')}
-              </Link>
-            </li>
+          <h4 className="mb-4 font-bold">{locale === 'hy' ? 'Արագ հղումներ' : locale === 'ru' ? 'Быстрые ссылки' : 'Quick links'}</h4>
+          <ul className="space-y-2 text-sm text-gray-300">
+            <li><Link href={`/${locale}/services`} className="hover:text-accent-500">{common('services')}</Link></li>
+            <li><Link href={`/${locale}/projects`} className="hover:text-accent-500">{common('projects')}</Link></li>
+            <li><Link href={`/${locale}/team`} className="hover:text-accent-500">{common('team')}</Link></li>
+            <li><Link href={`/${locale}/news`} className="hover:text-accent-500">{common('news')}</Link></li>
+            <li><Link href={`/${locale}/gallery`} className="hover:text-accent-500">{locale === 'hy' ? 'Պատկերասրահ' : locale === 'ru' ? 'Галерея' : 'Gallery'}</Link></li>
           </ul>
         </div>
       </div>
 
-      <div className="border-t border-primary-400 mt-8 pt-8 text-center text-sm text-gray-300">
-        <p>&copy; 2024 ELDESCO LLC. {t('footer.rights')}</p>
+      <div className="border-t border-primary-400 py-6 text-center text-sm text-gray-300">
+        <p>&copy; {year} ELDESCO LLC. {footer('rights')}</p>
       </div>
     </footer>
   );
