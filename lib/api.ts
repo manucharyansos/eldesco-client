@@ -1,22 +1,23 @@
 import axios, { AxiosInstance } from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
 
 export interface CmsSection {
   id: number;
   type: string;
-  name?: string;
+  key?: string | null;
   content: Record<string, unknown>;
+  settings?: Record<string, unknown>;
   sort_order: number;
-  is_active: boolean;
+  is_enabled: boolean;
 }
 
 export interface CmsPage {
   id: number;
   slug: string;
   title: string;
-  meta_title?: string;
-  meta_description?: string;
+  meta_title?: string | null;
+  meta_description?: string | null;
   is_published: boolean;
   sections: CmsSection[];
 }
@@ -25,52 +26,205 @@ class ApiClient {
   private client: AxiosInstance;
 
   constructor() {
-    this.client = axios.create({ baseURL: API_URL, headers: { 'Content-Type': 'application/json' } });
+    this.client = axios.create({ baseURL: API_URL });
+
     this.client.interceptors.request.use((config) => {
       const token = this.getToken();
       if (token) config.headers.Authorization = `Bearer ${token}`;
+
+      if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+        delete config.headers['Content-Type'];
+      } else if (!config.headers['Content-Type']) {
+        config.headers['Content-Type'] = 'application/json';
+      }
+
       return config;
     });
-    this.client.interceptors.response.use((response) => response, (error) => {
-      if (error.response?.status === 401 && typeof window !== 'undefined') {
-        this.clearToken();
-        if (window.location.pathname.startsWith('/admin')) window.location.href = '/admin/login';
+
+    this.client.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401 && typeof window !== 'undefined') {
+          this.clearToken();
+          if (window.location.pathname.startsWith('/admin')) {
+            window.location.href = '/admin/login';
+          }
+        }
+        return Promise.reject(error);
       }
-      throw error;
+    );
+  }
+
+  private getToken() {
+    return typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+  }
+
+  private setToken(token: string) {
+    if (typeof window !== 'undefined') localStorage.setItem('auth_token', token);
+  }
+
+  private clearToken() {
+    if (typeof window !== 'undefined') localStorage.removeItem('auth_token');
+  }
+
+  async login(email: string, password: string) {
+    const response = await this.client.post('/auth/login', { email, password });
+    if (response.data.token) this.setToken(response.data.token);
+    return response.data;
+  }
+
+  async logout() {
+    try {
+      await this.client.post('/auth/logout');
+    } finally {
+      this.clearToken();
+    }
+  }
+
+  getCurrentUser() {
+    return this.client.get('/auth/me');
+  }
+
+  getPage(slug: string, lang = 'hy') {
+    return this.client.get<CmsPage>(`/pages/${slug}`, { params: { lang } });
+  }
+
+  getAdminPages() {
+    return this.client.get('/admin/pages');
+  }
+
+  createPage(data: unknown) {
+    return this.client.post('/admin/pages', data);
+  }
+
+  updatePage(id: number, data: unknown) {
+    return this.client.put(`/admin/pages/${id}`, data);
+  }
+
+  deletePage(id: number) {
+    return this.client.delete(`/admin/pages/${id}`);
+  }
+
+  createSection(pageId: number, data: unknown) {
+    return this.client.post(`/admin/pages/${pageId}/sections`, data);
+  }
+
+  updateSection(id: number, data: unknown) {
+    return this.client.put(`/admin/sections/${id}`, data);
+  }
+
+  deleteSection(id: number) {
+    return this.client.delete(`/admin/sections/${id}`);
+  }
+
+  getServices(lang = 'hy') {
+    return this.client.get('/services', { params: { lang } });
+  }
+
+  getService(id: number, lang = 'hy') {
+    return this.client.get(`/services/${id}`, { params: { lang } });
+  }
+
+  createService(data: unknown) {
+    return this.client.post('/services', data);
+  }
+
+  updateService(id: number, data: unknown) {
+    return this.client.put(`/services/${id}`, data);
+  }
+
+  deleteService(id: number) {
+    return this.client.delete(`/services/${id}`);
+  }
+
+  getProjects(lang = 'hy', filters?: Record<string, unknown>) {
+    return this.client.get('/projects', { params: { lang, ...filters } });
+  }
+
+  getProject(id: number, lang = 'hy') {
+    return this.client.get(`/projects/${id}`, { params: { lang } });
+  }
+
+  getProjectCategories() {
+    return this.client.get('/projects/categories');
+  }
+
+  createProject(data: unknown) {
+    return this.client.post('/projects', data);
+  }
+
+  updateProject(id: number, data: unknown) {
+    return this.client.post(`/projects/${id}`, data, {
+      params: { _method: 'PUT' },
+      headers: typeof FormData !== 'undefined' && data instanceof FormData
+        ? { 'X-HTTP-Method-Override': 'PUT' }
+        : undefined,
     });
   }
 
-  private getToken() { return typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null; }
-  private setToken(token: string) { localStorage.setItem('auth_token', token); }
-  private clearToken() { localStorage.removeItem('auth_token'); }
+  deleteProject(id: number) {
+    return this.client.delete(`/projects/${id}`);
+  }
 
-  async login(email: string, password: string) { const r = await this.client.post('/auth/login', { email, password }); if (r.data.token) this.setToken(r.data.token); return r.data; }
-  async register(email: string, name: string, password: string) { const r = await this.client.post('/auth/register', { email, name, password, password_confirmation: password }); if (r.data.token) this.setToken(r.data.token); return r.data; }
-  async logout() { await this.client.post('/auth/logout'); this.clearToken(); }
-  async getCurrentUser() { return (await this.client.get('/auth/me')).data; }
+  getTeam(lang = 'hy') {
+    return this.client.get('/team', { params: { lang } });
+  }
 
-  getPage(slug: string, lang = 'hy') { return this.client.get<{ data: CmsPage }>(`/pages/${slug}`, { params: { lang } }); }
-  getAdminPages() { return this.client.get('/admin/pages'); }
-  createPage(data: unknown) { return this.client.post('/admin/pages', data); }
-  updatePage(id: number, data: unknown) { return this.client.put(`/admin/pages/${id}`, data); }
-  deletePage(id: number) { return this.client.delete(`/admin/pages/${id}`); }
-  createSection(pageId: number, data: unknown) { return this.client.post(`/admin/pages/${pageId}/sections`, data); }
-  updateSection(id: number, data: unknown) { return this.client.put(`/admin/sections/${id}`, data); }
-  deleteSection(id: number) { return this.client.delete(`/admin/sections/${id}`); }
+  getTeamMember(id: number, lang = 'hy') {
+    return this.client.get(`/team/${id}`, { params: { lang } });
+  }
 
-  getServices(lang = 'hy') { return this.client.get('/services', { params: { lang } }); }
-  getService(id: number, lang = 'hy') { return this.client.get(`/services/${id}`, { params: { lang } }); }
-  createService(data: unknown) { return this.client.post('/services', data); }
-  updateService(id: number, data: unknown) { return this.client.put(`/services/${id}`, data); }
-  deleteService(id: number) { return this.client.delete(`/services/${id}`); }
-  getProjects(lang = 'hy', filters?: Record<string, unknown>) { return this.client.get('/projects', { params: { lang, ...filters } }); }
-  getProject(id: number, lang = 'hy') { return this.client.get(`/projects/${id}`, { params: { lang } }); }
-  createProject(data: unknown) { return this.client.post('/projects', data); }
-  updateProject(id: number, data: unknown) { return this.client.put(`/projects/${id}`, data); }
-  deleteProject(id: number) { return this.client.delete(`/projects/${id}`); }
-  getTeam(lang = 'hy') { return this.client.get('/team', { params: { lang } }); }
-  getNews(lang = 'hy', page = 1, limit = 10) { return this.client.get('/news', { params: { lang, page, limit } }); }
-  getGallery(lang = 'hy', category?: string) { return this.client.get('/gallery', { params: { lang, category } }); }
+  createTeamMember(data: unknown) {
+    return this.client.post('/team', data);
+  }
+
+  updateTeamMember(id: number, data: unknown) {
+    return this.client.put(`/team/${id}`, data);
+  }
+
+  deleteTeamMember(id: number) {
+    return this.client.delete(`/team/${id}`);
+  }
+
+  getNews(lang = 'hy', page = 1, limit = 10) {
+    return this.client.get('/news', { params: { lang, page, limit } });
+  }
+
+  getNewsItem(idOrSlug: number | string, lang = 'hy') {
+    return this.client.get(`/news/${idOrSlug}`, { params: { lang } });
+  }
+
+  createNews(data: unknown) {
+    return this.client.post('/news', data);
+  }
+
+  updateNews(id: number, data: unknown) {
+    return this.client.put(`/news/${id}`, data);
+  }
+
+  deleteNews(id: number) {
+    return this.client.delete(`/news/${id}`);
+  }
+
+  getGallery(lang = 'hy', category?: string) {
+    return this.client.get('/gallery', { params: { lang, category } });
+  }
+
+  getGalleryCategories() {
+    return this.client.get('/gallery/categories');
+  }
+
+  createGalleryItem(data: unknown) {
+    return this.client.post('/gallery', data);
+  }
+
+  updateGalleryItem(id: number, data: unknown) {
+    return this.client.put(`/gallery/${id}`, data);
+  }
+
+  deleteGalleryItem(id: number) {
+    return this.client.delete(`/gallery/${id}`);
+  }
 }
 
 export const apiClient = new ApiClient();
