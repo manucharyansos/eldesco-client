@@ -5,22 +5,44 @@ import { TeamSection } from '@/components/sections/TeamSection';
 import { SectionRenderer } from '@/components/cms/SectionRenderer';
 import type { CmsPage } from '@/lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
 
 async function getHome(locale: string): Promise<CmsPage | null> {
   try {
-    const response = await fetch(`${API_URL}/pages/home?lang=${locale}`, { next: { revalidate: 60 } });
+    const response = await fetch(`${API_URL}/pages/home?lang=${locale}`, {
+      next: { revalidate: 60 },
+    });
+
     if (!response.ok) return null;
-    const json = await response.json();
-    return json.data ?? json;
-  } catch { return null; }
+    return (await response.json()) as CmsPage;
+  } catch {
+    return null;
+  }
 }
 
-export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
+export default async function HomePage({ params }: { params: { locale: string } }) {
+  const locale = ['hy', 'en', 'ru'].includes(params.locale) ? params.locale : 'hy';
   const page = await getHome(locale);
 
-  if (!page?.sections?.length) return <><Hero /><ServicesSection /><ProjectsSection /><TeamSection /></>;
+  if (!page?.sections?.length) {
+    return (
+      <>
+        <Hero />
+        <ServicesSection />
+        <ProjectsSection />
+        <TeamSection />
+      </>
+    );
+  }
 
-  return <main>{page.sections.sort((a, b) => a.sort_order - b.sort_order).map((section) => <SectionRenderer key={section.id} section={section} locale={locale} />)}</main>;
+  return (
+    <>
+      {page.sections
+        .filter((section) => section.is_enabled)
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((section) => (
+          <SectionRenderer key={section.id} section={section} locale={locale} />
+        ))}
+    </>
+  );
 }
