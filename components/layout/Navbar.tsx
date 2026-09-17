@@ -20,7 +20,6 @@ export function Navbar({ locale }: NavbarProps) {
     { href: 'about', text: label(locale, 'Մեր մասին', 'About', 'О нас') },
     { href: 'services', text: label(locale, 'Ծառայություններ', 'Services', 'Услуги') },
     { href: 'projects', text: label(locale, 'Նախագծեր', 'Projects', 'Проекты') },
-    { href: 'gallery', text: label(locale, 'Պատկերասրահ', 'Gallery', 'Галерея') },
     { href: 'contact', text: label(locale, 'Կապ մեզ հետ', 'Contact', 'Контакты') },
   ];
 
@@ -32,14 +31,16 @@ export function Navbar({ locale }: NavbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
-      <div className="container flex h-[82px] items-center justify-between gap-6">
+    <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/95 shadow-[0_10px_40px_rgba(15,23,42,.05)] backdrop-blur-xl">
+      <div className="container flex h-[88px] items-center justify-between gap-6">
         <Link href={`/${locale}`} className="group flex items-center" aria-label="ELDESCO home">
-          <img
-            src="/images/brand/eldesco-logo.png"
-            alt="ELDESCO"
-            className="h-16 w-auto max-w-[145px] object-contain transition duration-300 group-hover:scale-[1.02]"
-          />
+          <span className="flex min-h-16 min-w-[164px] items-center justify-center rounded-2xl border border-slate-800/70 bg-slate-950 px-4 py-2 shadow-lg shadow-slate-950/10 transition duration-300 group-hover:-translate-y-0.5 group-hover:shadow-xl">
+            <img
+              src="/images/brand/eldesco-logo.png"
+              alt="ELDESCO"
+              className="h-12 w-auto max-w-[140px] rounded-md bg-white object-contain px-1.5 py-1"
+            />
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-7 lg:flex">
