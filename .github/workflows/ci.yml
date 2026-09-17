@@ -3,7 +3,7 @@ name: Frontend CI
 on:
   push:
     branches:
-      - build/full-cms
+      - main
   workflow_dispatch:
 
 jobs:
