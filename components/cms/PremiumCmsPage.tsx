@@ -47,7 +47,7 @@ export async function PremiumCmsPage({
   eyebrow?: string;
 }) {
   const page = await loadPage(slug, locale);
-  const title = page?.title || slug.replaceAll('-', ' ');
+  const title = page?.title || slug.replace(/-/g, ' ');
 
   return (
     <div className="premium-page">
