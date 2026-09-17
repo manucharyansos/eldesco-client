@@ -12,6 +12,7 @@ const copy = (locale: string) => ({
   projects: locale === 'hy' ? 'Նախագծեր' : locale === 'ru' ? 'Проекты' : 'Projects',
   customers: locale === 'hy' ? 'Պատվիրատուներ' : locale === 'ru' ? 'Заказчики' : 'Customers',
   contact: locale === 'hy' ? 'Կապ մեզ հետ' : locale === 'ru' ? 'Контакты' : 'Contact',
+  navigation: locale === 'hy' ? 'Նավարկում' : locale === 'ru' ? 'Навигация' : 'Navigation',
   tagline: locale === 'hy'
     ? 'Էներգետիկ ենթակառուցվածքների և ինժեներական համակարգերի նախագծում և պատրաստում։'
     : locale === 'ru'
@@ -22,6 +23,11 @@ const copy = (locale: string) => ({
     : locale === 'ru'
       ? 'Армения, Ереван, Тбилисское шоссе 35/9'
       : '35/9 Tbilisyan Hwy, Yerevan, Armenia',
+  bottom: locale === 'hy'
+    ? 'Ինժեներիա • Էներգետիկա • Արտադրական ենթակառուցվածքներ'
+    : locale === 'ru'
+      ? 'Инжиниринг • Энергетика • Производственная инфраструктура'
+      : 'Engineering • Energy • Industrial Infrastructure',
 });
 
 export function Footer({ locale }: FooterProps) {
@@ -41,11 +47,11 @@ export function Footer({ locale }: FooterProps) {
       <div className="border-b border-white/10">
         <div className="container grid gap-12 py-16 lg:grid-cols-[1.2fr_.8fr_.8fr] lg:py-20">
           <div>
-            <div className="inline-flex rounded-2xl bg-white p-2 shadow-2xl shadow-black/20">
+            <div className="inline-flex rounded-2xl bg-[#0b1f33] p-3 ring-1 ring-white/10">
               <img
                 src="/images/brand/eldesco-logo.png"
                 alt="ELDESCO"
-                className="h-16 w-auto object-contain"
+                className="h-14 w-auto max-w-[180px] object-contain brightness-[1.7] contrast-125"
               />
             </div>
             <p className="mt-6 max-w-md text-base leading-7 text-slate-400">{t.tagline}</p>
@@ -53,7 +59,7 @@ export function Footer({ locale }: FooterProps) {
           </div>
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-[.22em] text-orange-400">Navigation</p>
+            <p className="text-xs font-bold uppercase tracking-[.22em] text-orange-400">{t.navigation}</p>
             <ul className="mt-6 space-y-3">
               {links.map(([href, text]) => (
                 <li key={href}>
@@ -78,7 +84,7 @@ export function Footer({ locale }: FooterProps) {
 
       <div className="container flex flex-col gap-3 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
         <p>© {year} ELDESCO LLC.</p>
-        <p>Engineering • Energy • Industrial Infrastructure</p>
+        <p>{t.bottom}</p>
       </div>
     </footer>
   );
