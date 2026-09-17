@@ -14,9 +14,7 @@ interface AuthStore {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, name: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   clearError: () => void;
@@ -26,7 +24,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
   token: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true,
   error: null,
 
   login: async (email: string, password: string) => {
@@ -42,25 +40,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     } catch (error: any) {
       set({
         error: error.response?.data?.message || 'Login failed',
-        isLoading: false,
-      });
-      throw error;
-    }
-  },
-
-  register: async (email: string, name: string, password: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await apiClient.register(email, name, password);
-      set({
-        user: response.user,
-        token: response.token,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-    } catch (error: any) {
-      set({
-        error: error.response?.data?.message || 'Registration failed',
+        isAuthenticated: false,
         isLoading: false,
       });
       throw error;
@@ -77,37 +57,39 @@ export const useAuthStore = create<AuthStore>((set) => ({
         user: null,
         token: null,
         isAuthenticated: false,
+        isLoading: false,
       });
     }
   },
 
   checkAuth: async () => {
-    const token = typeof window !== 'undefined' 
+    const token = typeof window !== 'undefined'
       ? localStorage.getItem('auth_token')
       : null;
 
     if (!token) {
-      set({ isAuthenticated: false });
+      set({ user: null, token: null, isAuthenticated: false, isLoading: false });
       return;
     }
 
     set({ token, isLoading: true });
     try {
-      const user = await apiClient.getCurrentUser();
+      const response = await apiClient.getCurrentUser();
       set({
-        user,
+        user: response.data,
         isAuthenticated: true,
         isLoading: false,
       });
-    } catch (error) {
+    } catch {
+      if (typeof window !== 'undefined') localStorage.removeItem('auth_token');
       set({
+        user: null,
+        token: null,
         isAuthenticated: false,
         isLoading: false,
       });
     }
   },
 
-  clearError: () => {
-    set({ error: null });
-  },
+  clearError: () => set({ error: null }),
 }));
