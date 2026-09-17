@@ -2,79 +2,42 @@
 
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api';
-import { NewsItem, PaginatedResponse } from '@/types';
-import { Button } from '@/components/common/Button';
-import { Loading } from '@/components/common/Loading';
-import { formatDate } from '@/lib/utils';
 
-export default function AdminNewsPage() {
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
+type Lang='hy'|'en'|'ru';
+type RawNews={id:number;title_hy:string;title_en:string;title_ru?:string|null;content_hy:string;content_en:string;content_ru?:string|null;excerpt_hy?:string|null;excerpt_en?:string|null;excerpt_ru?:string|null;image_url?:string|null;published:boolean;created_at?:string};
+type FormState={title_hy:string;title_en:string;title_ru:string;content_hy:string;content_en:string;content_ru:string;excerpt_hy:string;excerpt_en:string;excerpt_ru:string;image_url:string;published:boolean};
+const emptyForm=():FormState=>({title_hy:'',title_en:'',title_ru:'',content_hy:'',content_en:'',content_ru:'',excerpt_hy:'',excerpt_en:'',excerpt_ru:'',image_url:'',published:true});
+const langLabel:Record<Lang,string>={hy:'Հայերեն',en:'English',ru:'Русский'};
+const API_ORIGIN=(process.env.NEXT_PUBLIC_API_URL||'http://127.0.0.1:8000/api').replace(/\/api\/?$/,'');
+const imageSrc=(url:string)=>url.startsWith('/storage/')?`${API_ORIGIN}${url}`:url;
 
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.getNews('en', 1, 50);
-        setNews(response.data.data);
-      } catch (err) {
-        console.error('Error fetching news:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNews();
-  }, []);
-
-  if (loading) return <Loading />;
-
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-serif font-bold">Manage News</h1>
-        <Button variant="primary">+ Add Article</Button>
-      </div>
-
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Title</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Date</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Status</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {news.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-semibold">{item.title}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  {formatDate(item.createdAt, 'en')}
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                    item.published
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {item.published ? 'Published' : 'Draft'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 space-x-3">
-                  <button className="text-accent-600 hover:text-accent-700 font-semibold">
-                    Edit
-                  </button>
-                  <button className="text-red-600 hover:text-red-700 font-semibold">
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+export default function AdminNewsPage(){
+ const[items,setItems]=useState<RawNews[]>([]);const[loading,setLoading]=useState(true);const[editingId,setEditingId]=useState<number|'new'|null>(null);const[form,setForm]=useState<FormState>(emptyForm());const[lang,setLang]=useState<Lang>('hy');const[saving,setSaving]=useState(false);const[uploading,setUploading]=useState(false);const[error,setError]=useState('');
+ const load=async()=>{try{setLoading(true);const r=await apiClient.getAdminNews();setItems(r.data??[]);}catch{setError('Չհաջողվեց բեռնել նորությունները։');}finally{setLoading(false);}};
+ useEffect(()=>{void load();},[]);
+ const edit=(n:RawNews)=>{setEditingId(n.id);setForm({title_hy:n.title_hy||'',title_en:n.title_en||'',title_ru:n.title_ru||'',content_hy:n.content_hy||'',content_en:n.content_en||'',content_ru:n.content_ru||'',excerpt_hy:n.excerpt_hy||'',excerpt_en:n.excerpt_en||'',excerpt_ru:n.excerpt_ru||'',image_url:n.image_url||'',published:Boolean(n.published)});setLang('hy');setError('');};
+ const startNew=()=>{setEditingId('new');setForm(emptyForm());setLang('hy');setError('');};
+ const upload=async(file?:File)=>{if(!file)return;setUploading(true);setError('');try{const r=await apiClient.uploadMedia(file);setForm((f)=>({...f,image_url:r.data.url||''}));}catch{setError('Նկարի վերբեռնումը չհաջողվեց։');}finally{setUploading(false);}};
+ const save=async()=>{if(!form.title_hy.trim()||!form.title_en.trim()||!form.content_hy.trim()||!form.content_en.trim()){setError('HY և EN վերնագիրն ու հիմնական տեքստը պարտադիր են։');return;}setSaving(true);setError('');try{if(editingId==='new')await apiClient.createNews(form);else if(typeof editingId==='number')await apiClient.updateNews(editingId,form);setEditingId(null);setForm(emptyForm());await load();}catch(e:any){setError(e.response?.data?.message||'Պահպանումը չհաջողվեց։');}finally{setSaving(false);}};
+ const remove=async(id:number)=>{if(!confirm('Ջնջե՞լ այս նորությունը։'))return;try{await apiClient.deleteNews(id);setItems((v)=>v.filter((n)=>n.id!==id));}catch{setError('Ջնջումը չհաջողվեց։');}};
+ return <div className="space-y-7">
+  <div className="flex flex-wrap items-end justify-between gap-5"><div><p className="text-[11px] font-extrabold uppercase tracking-[.24em] text-orange-600">Բովանդակություն</p><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Նորություններ</h2><p className="mt-3 text-sm text-slate-500">Հրապարակիր ընկերության նորությունները և հոդվածները երեք լեզվով։</p></div><button onClick={startNew} className="rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-extrabold text-white shadow-xl transition hover:bg-orange-500">+ Նոր հոդված</button></div>
+  {error&&<div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
+  <div className={`grid gap-6 ${editingId!==null?'xl:grid-cols-[.8fr_1.2fr]':''}`}>
+   <section className="space-y-4">
+    {loading?<div className="rounded-[28px] border border-slate-200 bg-white p-10 text-sm text-slate-500">Բեռնվում է…</div>:items.map((n)=><article key={n.id} className={`overflow-hidden rounded-[26px] border bg-white shadow-sm transition ${editingId===n.id?'border-orange-200 ring-4 ring-orange-50':'border-slate-200 hover:shadow-lg'}`}>
+      <div className="flex gap-4 p-5"><div className="h-24 w-28 shrink-0 overflow-hidden rounded-2xl bg-slate-950">{n.image_url?<img src={imageSrc(n.image_url)} alt="" className="h-full w-full object-cover"/>:<div className="flex h-full items-center justify-center text-2xl font-black text-white/20">N</div>}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${n.published?'bg-emerald-50 text-emerald-700':'bg-slate-100 text-slate-500'}`}>{n.published?'Հրապարակված':'Սևագիր'}</span>{n.created_at&&<span className="text-[10px] text-slate-400">{new Date(n.created_at).toLocaleDateString('hy-AM')}</span>}</div><h3 className="mt-3 line-clamp-2 font-extrabold leading-6 text-slate-950">{n.title_hy||n.title_en}</h3><p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{n.excerpt_hy||n.content_hy||'Տեքստ չկա'}</p></div></div>
+      <div className="flex gap-2 border-t border-slate-100 px-5 py-4"><button onClick={()=>edit(n)} className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-700 hover:border-orange-200 hover:text-orange-600">Խմբագրել</button><button onClick={()=>void remove(n.id)} className="rounded-xl border border-red-100 px-3 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50">Ջնջել</button></div>
+    </article>)}
+    {!loading&&!items.length&&<div className="rounded-[26px] border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">Նորություն դեռ չկա։</div>}
+   </section>
+   {editingId!==null&&<section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+    <div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-orange-600">{editingId==='new'?'Նոր հոդված':'Խմբագրում'}</p><h3 className="mt-2 text-2xl font-black">Հոդվածի տվյալներ</h3></div><button onClick={()=>setEditingId(null)} className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-lg text-slate-500">×</button></div>
+    <div className="mt-6 grid gap-5 sm:grid-cols-[180px_1fr]"><div><div className="h-32 overflow-hidden rounded-2xl bg-slate-950">{form.image_url?<img src={imageSrc(form.image_url)} alt="" className="h-full w-full object-cover"/>:<div className="flex h-full items-center justify-center text-xs font-bold text-slate-500">Cover չկա</div>}</div><label className="mt-3 block cursor-pointer rounded-xl border border-dashed border-slate-300 px-3 py-3 text-center text-xs font-bold text-slate-600 hover:border-orange-400">{uploading?'Վերբեռնվում է…':'Վերբեռնել նկար'}<input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(e)=>void upload(e.target.files?.[0])}/></label></div><div className="flex items-center"><label className="flex w-full items-center justify-between rounded-2xl bg-slate-50 px-4 py-4"><div><span className="block text-sm font-extrabold text-slate-800">Հրապարակել</span><span className="mt-1 block text-xs text-slate-400">Անջատելու դեպքում հոդվածը կմնա սևագիր։</span></div><input type="checkbox" checked={form.published} onChange={(e)=>setForm({...form,published:e.target.checked})} className="h-5 w-5 accent-orange-500"/></label></div></div>
+    <div className="mt-6 flex rounded-xl bg-slate-100 p-1">{(['hy','en','ru'] as Lang[]).map((l)=><button key={l} onClick={()=>setLang(l)} className={`flex-1 rounded-lg px-3 py-2 text-xs font-bold ${lang===l?'bg-white text-slate-950 shadow-sm':'text-slate-500'}`}>{langLabel[l]}</button>)}</div>
+    <div className="mt-5 space-y-5"><label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Վերնագիր · {langLabel[lang]}</span><input value={form[`title_${lang}`]} onChange={(e)=>setForm({...form,[`title_${lang}`]:e.target.value})} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100"/></label><label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Կարճ նկարագրություն · {langLabel[lang]}</span><textarea rows={3} value={form[`excerpt_${lang}`]} onChange={(e)=>setForm({...form,[`excerpt_${lang}`]:e.target.value})} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100"/></label><label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Հիմնական տեքստ · {langLabel[lang]}</span><textarea rows={12} value={form[`content_${lang}`]} onChange={(e)=>setForm({...form,[`content_${lang}`]:e.target.value})} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-7 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100"/></label></div>
+    <div className="mt-7 flex gap-3 border-t border-slate-100 pt-5"><button onClick={()=>setEditingId(null)} className="flex-1 rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700">Չեղարկել</button><button onClick={()=>void save()} disabled={saving} className="flex-1 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-orange-500 disabled:opacity-50">{saving?'Պահպանվում է…':'Պահպանել'}</button></div>
+   </section>}
+  </div>
+ </div>;
 }
