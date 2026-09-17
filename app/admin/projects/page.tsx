@@ -1,103 +1,70 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api';
-import { Project } from '@/types';
-import { Button } from '@/components/common/Button';
-import { Loading } from '@/components/common/Loading';
+
+type RawProject = {
+  id: number;
+  title_hy: string;
+  title_en: string;
+  title_ru?: string | null;
+  description_hy?: string | null;
+  image_url?: string | null;
+  category?: string | null;
+  featured: boolean;
+  order_index?: number | null;
+};
 
 export default function AdminProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<RawProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [error, setError] = useState('');
 
-  const fetchProjects = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.getProjects('en');
-      setProjects(response.data);
-    } catch (err) {
-      console.error('Error fetching projects:', err);
-    } finally {
-      setLoading(false);
-    }
+  const load = async () => {
+    try { setLoading(true); const response = await apiClient.getAdminProjects(); setProjects(response.data ?? []); }
+    catch { setError('Չհաջողվեց բեռնել նախագծերը։'); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
+  useEffect(() => { void load(); }, []);
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this project?')) {
-      return;
-    }
-
-    try {
-      setDeleting(id);
-      await apiClient.deleteProject(id);
-      setProjects(projects.filter(p => p.id !== id));
-    } catch (err) {
-      console.error('Error deleting project:', err);
-      alert('Failed to delete project');
-    } finally {
-      setDeleting(null);
-    }
+  const remove = async (id: number) => {
+    if (!confirm('Ջնջե՞լ այս նախագիծը։')) return;
+    try { setDeleting(id); await apiClient.deleteProject(id); setProjects((current) => current.filter((item) => item.id !== id)); }
+    catch { setError('Նախագիծը չհաջողվեց ջնջել։'); }
+    finally { setDeleting(null); }
   };
-
-  if (loading) return <Loading />;
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-serif font-bold">Manage Projects</h1>
-        <Button 
-          variant="primary"
-          onClick={() => window.location.href = '/admin/projects/edit/new'}
-        >
-          + Add Project
-        </Button>
+    <div className="space-y-7">
+      <div className="flex flex-wrap items-end justify-between gap-5">
+        <div><p className="text-[11px] font-extrabold uppercase tracking-[.24em] text-orange-600">Պորտֆոլիո</p><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Նախագծեր</h2><p className="mt-3 text-sm text-slate-500">Ավելացրու իրականացված աշխատանքները, նկարները, կատեգորիաները և երեք լեզուների նկարագրությունները։</p></div>
+        <Link href="/admin/projects/edit/new" className="rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-extrabold text-white shadow-xl transition hover:bg-orange-500">+ Նոր նախագիծ</Link>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Title</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Category</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Featured</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {projects.map((project) => (
-              <tr key={project.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-semibold">{project.title}</td>
-                <td className="px-6 py-4 text-gray-600">{project.category}</td>
-                <td className="px-6 py-4">
-                  <span className={project.featured ? 'text-green-600' : 'text-gray-400'}>
-                    {project.featured ? '★' : '☆'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 space-x-3">
-                  <button 
-                    onClick={() => window.location.href = `/admin/projects/edit/${project.id}`}
-                    className="text-accent-600 hover:text-accent-700 font-semibold"
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(project.id)}
-                    disabled={deleting === project.id}
-                    className="text-red-600 hover:text-red-700 font-semibold disabled:opacity-50"
-                  >
-                    {deleting === project.id ? 'Deleting...' : 'Delete'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {error && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
+
+      {loading ? <div className="rounded-[28px] border border-slate-200 bg-white p-10 text-sm text-slate-500">Բեռնվում է…</div> : (
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {projects.map((project, index) => (
+            <article key={project.id} className="group overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+              <div className="relative h-48 overflow-hidden bg-slate-900">
+                {project.image_url ? <img src={project.image_url} alt="" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" /> : <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_70%_30%,rgba(249,115,22,.22),transparent_35%)] text-4xl font-black text-white/20">{String(index + 1).padStart(2, '0')}</div>}
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-950/80 to-transparent" />
+                <div className="absolute left-4 top-4 flex gap-2">{project.featured && <span className="rounded-full bg-orange-500 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white">Առաջարկվող</span>}{project.category && <span className="rounded-full bg-white/90 px-3 py-1 text-[10px] font-bold text-slate-800 backdrop-blur">{project.category}</span>}</div>
+              </div>
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-3"><h3 className="text-lg font-extrabold leading-6 text-slate-950">{project.title_hy || project.title_en}</h3><span className="text-[10px] font-bold text-slate-400">#{project.order_index ?? index + 1}</span></div>
+                <p className="mt-2 line-clamp-2 min-h-10 text-xs leading-5 text-slate-500">{project.description_hy || 'Նկարագրություն չկա'}</p>
+                <div className="mt-5 flex gap-2 border-t border-slate-100 pt-4"><Link href={`/admin/projects/edit/${project.id}`} className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-center text-xs font-bold text-slate-700 transition hover:border-orange-200 hover:text-orange-600">Խմբագրել</Link><button onClick={() => void remove(project.id)} disabled={deleting === project.id} className="rounded-xl border border-red-100 px-3 py-2.5 text-xs font-bold text-red-500 transition hover:bg-red-50 disabled:opacity-50">{deleting === project.id ? '…' : 'Ջնջել'}</button></div>
+              </div>
+            </article>
+          ))}
+          {!projects.length && <div className="rounded-[26px] border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500 md:col-span-2 xl:col-span-3">Դեռ նախագիծ չկա։</div>}
+        </div>
+      )}
     </div>
   );
 }
