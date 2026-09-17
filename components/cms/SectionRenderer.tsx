@@ -23,8 +23,10 @@ export function SectionRenderer({ section, locale }: { section: CmsSection; loca
 
   if (section.type === 'hero') {
     return (
-      <section className="relative overflow-hidden bg-slate-950 py-28 text-white md:py-36">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_25%,rgba(249,115,22,0.2),transparent_34%)]" />
+      <section className="relative isolate overflow-hidden bg-slate-950 py-28 text-white md:py-36">
+        <div className="absolute inset-0 -z-30 bg-[url('/images/projects/substation.png')] bg-cover bg-center opacity-35" />
+        <div className="absolute inset-0 -z-20 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/55" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_75%_25%,rgba(249,115,22,0.2),transparent_34%)]" />
         <div className="absolute inset-0 premium-grid opacity-20" />
         <div className="container relative z-10 animate-rise">
           <p className="premium-eyebrow">{text(c.eyebrow)}</p>
@@ -69,18 +71,15 @@ export function SectionRenderer({ section, locale }: { section: CmsSection; loca
               const value = item as Record<string, unknown>;
               const catalog = serviceCatalog[index + 1];
               return (
-                <Link
-                  href={serviceHref(index, locale)}
-                  key={index}
-                  className="group premium-card overflow-hidden"
-                >
-                  {catalog?.image && (
+                <Link href={serviceHref(index, locale)} key={index} className="group premium-card overflow-hidden">
+                  {catalog?.image ? (
                     <div className="h-48 overflow-hidden bg-slate-200">
-                      <img
-                        src={catalog.image}
-                        alt=""
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                      />
+                      <img src={catalog.image} alt="" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                    </div>
+                  ) : (
+                    <div className="relative h-40 overflow-hidden bg-slate-950">
+                      <div className="absolute inset-0 premium-grid opacity-30" />
+                      <div className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-orange-500/20 blur-3xl" />
                     </div>
                   )}
                   <div className="p-7">
@@ -144,11 +143,7 @@ export function SectionRenderer({ section, locale }: { section: CmsSection; loca
           <div className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {list(c.items).map((item, index) => {
               const value = item as Record<string, unknown>;
-              return (
-                <div key={index} className="premium-panel flex min-h-24 items-center justify-center px-4 py-5 text-center text-sm font-semibold text-slate-700 transition hover:-translate-y-1 hover:border-orange-200">
-                  {text(value.name)}
-                </div>
-              );
+              return <div key={index} className="premium-panel flex min-h-24 items-center justify-center px-4 py-5 text-center text-sm font-semibold text-slate-700 transition hover:-translate-y-1 hover:border-orange-200">{text(value.name)}</div>;
             })}
           </div>
         </div>
@@ -159,12 +154,8 @@ export function SectionRenderer({ section, locale }: { section: CmsSection; loca
   if (section.type === 'company_details') {
     const accounts = list(c.accounts);
     const details = [
-      ['Company', text(c.company)],
-      ['Bank', text(c.bank)],
-      ['Address', text(c.business_address)],
-      ['Tax ID', text(c.tax_id)],
-      ['Registration', text(c.registration)],
-      ['Director', text(c.director)],
+      ['Company', text(c.company)], ['Bank', text(c.bank)], ['Address', text(c.business_address)],
+      ['Tax ID', text(c.tax_id)], ['Registration', text(c.registration)], ['Director', text(c.director)],
       ['Chief accountant', text(c.chief_accountant)],
     ].filter(([, value]) => value);
 
@@ -184,22 +175,9 @@ export function SectionRenderer({ section, locale }: { section: CmsSection; loca
               <a className="premium-button-secondary" href={`mailto:${text(c.email)}`}>{locale === 'hy' ? 'Գրել մեզ' : locale === 'ru' ? 'Написать' : 'Email us'}</a>
             </div>
           </div>
-
           <div className="grid gap-3 sm:grid-cols-2">
-            {details.map(([label, value]) => (
-              <div key={label} className="premium-panel p-5">
-                <div className="text-xs font-bold uppercase tracking-[.18em] text-slate-400">{label}</div>
-                <div className="mt-2 font-medium leading-6 text-slate-800">{value}</div>
-              </div>
-            ))}
-            {accounts.length > 0 && (
-              <div className="premium-panel p-5 sm:col-span-2">
-                <div className="text-xs font-bold uppercase tracking-[.18em] text-slate-400">Bank accounts</div>
-                <div className="mt-3 grid gap-2 text-sm text-slate-700 md:grid-cols-3">
-                  {accounts.map((account, index) => <div key={index}>{text(account)}</div>)}
-                </div>
-              </div>
-            )}
+            {details.map(([label, value]) => <div key={label} className="premium-panel p-5"><div className="text-xs font-bold uppercase tracking-[.18em] text-slate-400">{label}</div><div className="mt-2 font-medium leading-6 text-slate-800">{value}</div></div>)}
+            {accounts.length > 0 && <div className="premium-panel p-5 sm:col-span-2"><div className="text-xs font-bold uppercase tracking-[.18em] text-slate-400">Bank accounts</div><div className="mt-3 grid gap-2 text-sm text-slate-700 md:grid-cols-3">{accounts.map((account, index) => <div key={index}>{text(account)}</div>)}</div></div>}
           </div>
         </div>
       </section>
