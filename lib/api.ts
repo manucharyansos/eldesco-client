@@ -121,6 +121,15 @@ class ApiClient {
     return this.client.delete(`/admin/sections/${id}`);
   }
 
+  uploadMedia(file: File, alt?: { hy?: string; en?: string; ru?: string }) {
+    const form = new FormData();
+    form.append('image', file);
+    if (alt?.hy) form.append('alt_hy', alt.hy);
+    if (alt?.en) form.append('alt_en', alt.en);
+    if (alt?.ru) form.append('alt_ru', alt.ru);
+    return this.client.post('/admin/media', form);
+  }
+
   getServices(lang = 'hy') {
     return this.client.get('/services', { params: { lang } });
   }
