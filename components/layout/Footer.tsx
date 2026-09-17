@@ -11,7 +11,6 @@ const copy = (locale: string) => ({
   services: locale === 'hy' ? 'Ծառայություններ' : locale === 'ru' ? 'Услуги' : 'Services',
   projects: locale === 'hy' ? 'Նախագծեր' : locale === 'ru' ? 'Проекты' : 'Projects',
   customers: locale === 'hy' ? 'Պատվիրատուներ' : locale === 'ru' ? 'Заказчики' : 'Customers',
-  gallery: locale === 'hy' ? 'Պատկերասրահ' : locale === 'ru' ? 'Галерея' : 'Gallery',
   contact: locale === 'hy' ? 'Կապ մեզ հետ' : locale === 'ru' ? 'Контакты' : 'Contact',
   tagline: locale === 'hy'
     ? 'Էներգետիկ ենթակառուցվածքների և ինժեներական համակարգերի նախագծում և պատրաստում։'
@@ -34,7 +33,6 @@ export function Footer({ locale }: FooterProps) {
     ['services', t.services],
     ['projects', t.projects],
     ['customers', t.customers],
-    ['gallery', t.gallery],
     ['contact', t.contact],
   ];
 
@@ -43,11 +41,13 @@ export function Footer({ locale }: FooterProps) {
       <div className="border-b border-white/10">
         <div className="container grid gap-12 py-16 lg:grid-cols-[1.2fr_.8fr_.8fr] lg:py-20">
           <div>
-            <img
-              src="/images/brand/eldesco-logo.png"
-              alt="ELDESCO"
-              className="h-20 w-auto rounded-lg bg-white object-contain px-2"
-            />
+            <div className="inline-flex rounded-2xl bg-white p-2 shadow-2xl shadow-black/20">
+              <img
+                src="/images/brand/eldesco-logo.png"
+                alt="ELDESCO"
+                className="h-16 w-auto object-contain"
+              />
+            </div>
             <p className="mt-6 max-w-md text-base leading-7 text-slate-400">{t.tagline}</p>
             <div className="mt-8 h-px w-20 bg-orange-500" />
           </div>
