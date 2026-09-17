@@ -6,13 +6,13 @@ const withNextIntl = require('next-intl/plugin')(
 const nextConfig = {
   images: {
     unoptimized: true,
-    domains: ['localhost', 'api.eldesco.am']
+    domains: ['localhost', '127.0.0.1', 'api.eldesco.am']
   },
   redirects: async () => {
     return [
       {
         source: '/',
-        destination: '/en',
+        destination: '/hy',
         permanent: false
       }
     ];
