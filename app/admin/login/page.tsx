@@ -14,6 +14,7 @@ export default function AdminLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     setError(null);
     setSubmitting(true);
 
@@ -97,8 +98,7 @@ export default function AdminLoginPage() {
 
             <button
               type="submit"
-              disabled={submitting}
-              className="mt-2 flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-4 text-sm font-extrabold text-white shadow-xl shadow-slate-950/10 transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 flex w-full cursor-pointer items-center justify-center rounded-2xl bg-slate-950 px-5 py-4 text-sm font-extrabold text-white shadow-xl shadow-slate-950/10 transition hover:-translate-y-0.5 hover:bg-orange-500"
             >
               {submitting ? 'Մուտք ենք գործում…' : 'Մուտք գործել'}
             </button>
