@@ -26,7 +26,7 @@ class ApiClient {
   private client: AxiosInstance;
 
   constructor() {
-    this.client = axios.create({ baseURL: API_URL });
+    this.client = axios.create({ baseURL: API_URL, timeout: 10000 });
 
     this.client.interceptors.request.use((config) => {
       const token = this.getToken();
