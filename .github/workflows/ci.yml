@@ -15,15 +15,15 @@ jobs:
         with:
           node-version: 20
       - run: npm install
-      - name: Build production cPanel bundle
-        run: npm run pack
+      - name: Build static production ZIP
+        run: npm run pack:static
         env:
           NEXT_PUBLIC_API_URL: https://api.eldesco.am/api
           NEXT_PUBLIC_SITE_URL: https://eldesco.am
-      - name: Upload cPanel ZIP
+      - name: Upload frontend ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: eldesco-cpanel
-          path: dist/eldesco-cpanel.zip
+          name: eldesco-frontend-dist
+          path: dist/eldesco-frontend-dist.zip
           if-no-files-found: error
           retention-days: 7
