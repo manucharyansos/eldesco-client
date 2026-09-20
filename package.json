@@ -10,7 +10,8 @@
     "lint": "next lint",
     "dev:all": "bash scripts/dev-all.sh",
     "typecheck": "tsc --noEmit",
-    "pack": "bash scripts/pack-standalone.sh"
+    "pack": "bash scripts/pack-standalone.sh",
+    "pack:static": "bash scripts/pack-static.sh"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.3.0",
