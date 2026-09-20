@@ -1,0 +1,359 @@
+[
+ {
+  "src": "/images/deck/power/substation-cabinets.webp",
+  "area": "power",
+  "name": "substation-cabinets",
+  "w": 1384,
+  "h": 1138
+ },
+ {
+  "src": "/images/deck/power/mv-transformer-busbar.webp",
+  "area": "power",
+  "name": "mv-transformer-busbar",
+  "w": 1200,
+  "h": 1369
+ },
+ {
+  "src": "/images/deck/power/switchgear-busbar-trunking.webp",
+  "area": "power",
+  "name": "switchgear-busbar-trunking",
+  "w": 495,
+  "h": 594
+ },
+ {
+  "src": "/images/deck/power/switchboard-copper-3200kw.webp",
+  "area": "power",
+  "name": "switchboard-copper-3200kw",
+  "w": 1600,
+  "h": 1200
+ },
+ {
+  "src": "/images/deck/power/copper-busbar-frame.webp",
+  "area": "power",
+  "name": "copper-busbar-frame",
+  "w": 1200,
+  "h": 1600
+ },
+ {
+  "src": "/images/deck/power/busbar-connections.webp",
+  "area": "power",
+  "name": "busbar-connections",
+  "w": 720,
+  "h": 1280
+ },
+ {
+  "src": "/images/deck/power/distribution-panel.webp",
+  "area": "power",
+  "name": "distribution-panel",
+  "w": 729,
+  "h": 918
+ },
+ {
+  "src": "/images/deck/power/panels-workshop.webp",
+  "area": "power",
+  "name": "panels-workshop",
+  "w": 1280,
+  "h": 720
+ },
+ {
+  "src": "/images/deck/power/panel-internals.webp",
+  "area": "power",
+  "name": "panel-internals",
+  "w": 565,
+  "h": 1400
+ },
+ {
+  "src": "/images/deck/power/busbar-trunking-pallet.webp",
+  "area": "power",
+  "name": "busbar-trunking-pallet",
+  "w": 1503,
+  "h": 544
+ },
+ {
+  "src": "/images/deck/power/busbar-riser-cabinet.webp",
+  "area": "power",
+  "name": "busbar-riser-cabinet",
+  "w": 789,
+  "h": 1400
+ },
+ {
+  "src": "/images/deck/power/busbar-joints.webp",
+  "area": "power",
+  "name": "busbar-joints",
+  "w": 748,
+  "h": 381
+ },
+ {
+  "src": "/images/deck/power/busbar-riser.webp",
+  "area": "power",
+  "name": "busbar-riser",
+  "w": 787,
+  "h": 1400
+ },
+ {
+  "src": "/images/deck/power/soft-starter-cabinet.webp",
+  "area": "power",
+  "name": "soft-starter-cabinet",
+  "w": 823,
+  "h": 1600
+ },
+ {
+  "src": "/images/deck/power/frequency-converter-cabinet.webp",
+  "area": "power",
+  "name": "frequency-converter-cabinet",
+  "w": 1031,
+  "h": 1600
+ },
+ {
+  "src": "/images/deck/power/mv-cable-terminations.webp",
+  "area": "power",
+  "name": "mv-cable-terminations",
+  "w": 609,
+  "h": 910
+ },
+ {
+  "src": "/images/deck/power/converter-rack.webp",
+  "area": "power",
+  "name": "converter-rack",
+  "w": 551,
+  "h": 925
+ },
+ {
+  "src": "/images/deck/power/mv-insulators.webp",
+  "area": "power",
+  "name": "mv-insulators",
+  "w": 879,
+  "h": 686
+ },
+ {
+  "src": "/images/deck/industrial/compressed-air-station.webp",
+  "area": "industrial",
+  "name": "compressed-air-station",
+  "w": 1711,
+  "h": 1800
+ },
+ {
+  "src": "/images/deck/industrial/air-filter-line.webp",
+  "area": "industrial",
+  "name": "air-filter-line",
+  "w": 1599,
+  "h": 610
+ },
+ {
+  "src": "/images/deck/industrial/aluminium-air-pipeline.webp",
+  "area": "industrial",
+  "name": "aluminium-air-pipeline",
+  "w": 805,
+  "h": 1400
+ },
+ {
+  "src": "/images/deck/industrial/pumping-station.webp",
+  "area": "industrial",
+  "name": "pumping-station",
+  "w": 1800,
+  "h": 1316
+ },
+ {
+  "src": "/images/deck/industrial/ahu-piping.webp",
+  "area": "industrial",
+  "name": "ahu-piping",
+  "w": 1005,
+  "h": 866
+ },
+ {
+  "src": "/images/deck/industrial/stainless-pump-skid.webp",
+  "area": "industrial",
+  "name": "stainless-pump-skid",
+  "w": 1261,
+  "h": 1600
+ },
+ {
+  "src": "/images/deck/industrial/stainless-tanks-control.webp",
+  "area": "industrial",
+  "name": "stainless-tanks-control",
+  "w": 1333,
+  "h": 911
+ },
+ {
+  "src": "/images/deck/industrial/pump-unit.webp",
+  "area": "industrial",
+  "name": "pump-unit",
+  "w": 1216,
+  "h": 1096
+ },
+ {
+  "src": "/images/deck/industrial/scada-cabinet-1.webp",
+  "area": "industrial",
+  "name": "scada-cabinet-1",
+  "w": 702,
+  "h": 1365
+ },
+ {
+  "src": "/images/deck/industrial/scada-cabinet-2.webp",
+  "area": "industrial",
+  "name": "scada-cabinet-2",
+  "w": 758,
+  "h": 1400
+ },
+ {
+  "src": "/images/deck/industrial/scada-cabinet-3.webp",
+  "area": "industrial",
+  "name": "scada-cabinet-3",
+  "w": 1077,
+  "h": 1600
+ },
+ {
+  "src": "/images/deck/refrigeration/condensing-unit.webp",
+  "area": "refrigeration",
+  "name": "condensing-unit",
+  "w": 859,
+  "h": 744
+ },
+ {
+  "src": "/images/deck/refrigeration/machine-room.webp",
+  "area": "refrigeration",
+  "name": "machine-room",
+  "w": 932,
+  "h": 493
+ },
+ {
+  "src": "/images/deck/refrigeration/refrigeration-rack.webp",
+  "area": "refrigeration",
+  "name": "refrigeration-rack",
+  "w": 859,
+  "h": 1257
+ },
+ {
+  "src": "/images/deck/refrigeration/compressor-rack.webp",
+  "area": "refrigeration",
+  "name": "compressor-rack",
+  "w": 1006,
+  "h": 709
+ },
+ {
+  "src": "/images/deck/refrigeration/refrigeration-3d-model.webp",
+  "area": "refrigeration",
+  "name": "refrigeration-3d-model",
+  "w": 639,
+  "h": 447
+ },
+ {
+  "src": "/images/deck/refrigeration/compressor-heat-exchanger.webp",
+  "area": "refrigeration",
+  "name": "compressor-heat-exchanger",
+  "w": 1280,
+  "h": 960
+ },
+ {
+  "src": "/images/deck/refrigeration/air-cooler.webp",
+  "area": "refrigeration",
+  "name": "air-cooler",
+  "w": 1600,
+  "h": 882
+ },
+ {
+  "src": "/images/deck/refrigeration/compressor-rack-control.webp",
+  "area": "refrigeration",
+  "name": "compressor-rack-control",
+  "w": 1030,
+  "h": 528
+ },
+ {
+  "src": "/images/deck/refrigeration/refrigeration-control-panel.webp",
+  "area": "refrigeration",
+  "name": "refrigeration-control-panel",
+  "w": 1138,
+  "h": 726
+ },
+ {
+  "src": "/images/deck/led/facade-installation-night.webp",
+  "area": "led",
+  "name": "facade-installation-night",
+  "w": 658,
+  "h": 1400
+ },
+ {
+  "src": "/images/deck/led/facade-installation-day.webp",
+  "area": "led",
+  "name": "facade-installation-day",
+  "w": 434,
+  "h": 604
+ },
+ {
+  "src": "/images/deck/led/concert-hall-screen.webp",
+  "area": "led",
+  "name": "concert-hall-screen",
+  "w": 1272,
+  "h": 1012
+ },
+ {
+  "src": "/images/deck/led/stage-screen.webp",
+  "area": "led",
+  "name": "stage-screen",
+  "w": 739,
+  "h": 427
+ },
+ {
+  "src": "/images/deck/led/rear-structure.webp",
+  "area": "led",
+  "name": "rear-structure",
+  "w": 1050,
+  "h": 1400
+ },
+ {
+  "src": "/images/deck/metalworks/laser-cutting.webp",
+  "area": "metalworks",
+  "name": "laser-cutting",
+  "w": 2000,
+  "h": 1335
+ },
+ {
+  "src": "/images/deck/metalworks/laser-welding-wide.webp",
+  "area": "metalworks",
+  "name": "laser-welding-wide",
+  "w": 1697,
+  "h": 974
+ },
+ {
+  "src": "/images/deck/metalworks/laser-welding-station.webp",
+  "area": "metalworks",
+  "name": "laser-welding-station",
+  "w": 1742,
+  "h": 1800
+ },
+ {
+  "src": "/images/deck/metalworks/laser-welding-detail.webp",
+  "area": "metalworks",
+  "name": "laser-welding-detail",
+  "w": 1413,
+  "h": 755
+ },
+ {
+  "src": "/images/deck/metalworks/press-brake-tooling.webp",
+  "area": "metalworks",
+  "name": "press-brake-tooling",
+  "w": 1800,
+  "h": 1658
+ },
+ {
+  "src": "/images/deck/metalworks/press-brake-operator.webp",
+  "area": "metalworks",
+  "name": "press-brake-operator",
+  "w": 1600,
+  "h": 1452
+ },
+ {
+  "src": "/images/deck/metalworks/plate-rolling.webp",
+  "area": "metalworks",
+  "name": "plate-rolling",
+  "w": 2000,
+  "h": 1125
+ },
+ {
+  "src": "/images/deck/metalworks/plate-rolling-cnc.webp",
+  "area": "metalworks",
+  "name": "plate-rolling-cnc",
+  "w": 1800,
+  "h": 1350
+ }
+]

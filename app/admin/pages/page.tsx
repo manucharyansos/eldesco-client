@@ -76,7 +76,7 @@ export default function PagesManager() {
                   </div>
                 </div>
               </div>
-              <div className="text-sm font-medium text-slate-600">/{page.slug}</div>
+              <div className="text-sm font-medium text-slate-600">{page.slug === 'home' ? '/' : `/${page.slug}`}</div>
               <div>
                 <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${page.is_published ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                   <span className={`h-1.5 w-1.5 rounded-full ${page.is_published ? 'bg-emerald-500' : 'bg-slate-400'}`} />
@@ -85,7 +85,7 @@ export default function PagesManager() {
               </div>
               <div className="flex gap-2 md:justify-end">
                 <Link href={`/admin/pages/${page.id}`} className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:border-orange-200 hover:text-orange-600">Խմբագրել</Link>
-                <button onClick={() => void remove(page.id)} className="rounded-xl border border-red-100 bg-white px-3.5 py-2 text-xs font-bold text-red-500 transition hover:bg-red-50">Ջնջել</button>
+                {page.slug !== 'home' && <button onClick={() => void remove(page.id)} className="rounded-xl border border-red-100 bg-white px-3.5 py-2 text-xs font-bold text-red-500 transition hover:bg-red-50">Ջնջել</button>}
               </div>
             </div>
           ))

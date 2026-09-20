@@ -1,90 +1,56 @@
-'use client';
-
 import Link from 'next/link';
+import type { Locale } from '@/lib/config';
+import type { SiteData } from '@/lib/cms-types';
+import { makeUi } from '@/lib/defaults';
+import { formatPhone, navHref, telHref } from '@/lib/nav';
+import { mediaUrl } from '@/lib/media';
+import { str } from '@/lib/cms';
 
-interface FooterProps {
-  locale: string;
-}
-
-const copy = (locale: string) => ({
-  about: locale === 'hy' ? 'Մեր մասին' : locale === 'ru' ? 'О нас' : 'About',
-  services: locale === 'hy' ? 'Ծառայություններ' : locale === 'ru' ? 'Услуги' : 'Services',
-  projects: locale === 'hy' ? 'Նախագծեր' : locale === 'ru' ? 'Проекты' : 'Projects',
-  customers: locale === 'hy' ? 'Պատվիրատուներ' : locale === 'ru' ? 'Заказчики' : 'Customers',
-  contact: locale === 'hy' ? 'Կապ մեզ հետ' : locale === 'ru' ? 'Контакты' : 'Contact',
-  navigation: locale === 'hy' ? 'Նավարկում' : locale === 'ru' ? 'Навигация' : 'Navigation',
-  tagline: locale === 'hy'
-    ? 'Էներգետիկ ենթակառուցվածքների և ինժեներական համակարգերի նախագծում և պատրաստում։'
-    : locale === 'ru'
-      ? 'Проектирование и производство энергетической инфраструктуры и инженерных систем.'
-      : 'Design and production of energy infrastructure and engineering systems.',
-  address: locale === 'hy'
-    ? 'ՀՀ, ք․ Երևան, Թբիլիսյան 35/9'
-    : locale === 'ru'
-      ? 'Армения, Ереван, Тбилисское шоссе 35/9'
-      : '35/9 Tbilisyan Hwy, Yerevan, Armenia',
-  bottom: locale === 'hy'
-    ? 'Ինժեներիա • Էներգետիկա • Արտադրական ենթակառուցվածքներ'
-    : locale === 'ru'
-      ? 'Инжиниринг • Энергетика • Производственная инфраструктура'
-      : 'Engineering • Energy • Industrial Infrastructure',
-});
-
-export function Footer({ locale }: FooterProps) {
-  const t = copy(locale);
+export function Footer({ site, locale }: { site: SiteData; locale: Locale }) {
+  const s = site.settings;
+  const ui = makeUi(s, locale);
+  const phone = str(s['contact.phone']);
+  const email = str(s['contact.email']);
+  const address = str(s['contact.business_address']);
+  const name = str(s['company.name']) || 'ELDESCO';
+  const logo = mediaUrl(str(s['brand.logo_light']) || '/images/brand/eldesco-logo-white.png');
   const year = new Date().getFullYear();
 
-  const links = [
-    ['about', t.about],
-    ['services', t.services],
-    ['projects', t.projects],
-    ['customers', t.customers],
-    ['contact', t.contact],
-  ];
-
   return (
-    <footer className="mt-auto overflow-hidden bg-slate-950 text-white">
-      <div className="border-b border-white/10">
-        <div className="container grid gap-12 py-16 lg:grid-cols-[1.2fr_.8fr_.8fr] lg:py-20">
-          <div>
-            <div className="inline-flex rounded-2xl bg-[#0b1f33] p-3 ring-1 ring-white/10">
-              <img
-                src="/images/brand/eldesco-logo.png"
-                alt="ELDESCO"
-                className="h-14 w-auto max-w-[180px] object-contain brightness-[1.7] contrast-125"
-              />
-            </div>
-            <p className="mt-6 max-w-md text-base leading-7 text-slate-400">{t.tagline}</p>
-            <div className="mt-8 h-px w-20 bg-orange-500" />
-          </div>
+    <footer className="mt-auto bg-navy-900 text-white">
+      <div className="container grid gap-12 py-16 lg:grid-cols-[1.3fr_.8fr_1fr] lg:py-20">
+        <div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logo} alt={name} className="h-24 w-auto" width={96} height={96} loading="lazy" />
+          <p className="mt-6 max-w-md text-[.95rem] leading-7 text-navy-200">{str(s['company.tagline'])}</p>
+        </div>
 
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[.22em] text-orange-400">{t.navigation}</p>
-            <ul className="mt-6 space-y-3">
-              {links.map(([href, text]) => (
-                <li key={href}>
-                  <Link href={`/${locale}/${href}`} className="text-slate-300 transition hover:text-white">
-                    {text}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <nav aria-label={ui('navigation')}>
+          <h2 className="text-sm font-bold text-white">{ui('navigation')}</h2>
+          <ul className="mt-5 space-y-3">
+            {site.navigation.footer.map((item) => (
+              <li key={(item.page_slug || item.url || '') + item.label}>
+                <Link href={navHref(item, locale)} className="text-[.95rem] text-navy-200 transition hover:text-white">{item.label}</Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[.22em] text-orange-400">ELDESCO LLC</p>
-            <div className="mt-6 space-y-4 text-sm leading-6 text-slate-300">
-              <a className="block transition hover:text-white" href="tel:+37499694569">+374 99 694 569</a>
-              <a className="block transition hover:text-white" href="mailto:eldesco@eldesco.am">eldesco@eldesco.am</a>
-              <p>{t.address}</p>
-            </div>
-          </div>
+        <div>
+          <h2 className="text-sm font-bold text-white">{name}</h2>
+          <address className="mt-5 space-y-3 text-[.95rem] not-italic leading-7 text-navy-200">
+            {phone && <a className="block font-semibold text-white transition hover:text-amber-400" href={telHref(phone)}>{formatPhone(phone)}</a>}
+            {email && <a className="block transition hover:text-white" href={`mailto:${email}`}>{email}</a>}
+            {address && <p>{address}</p>}
+          </address>
         </div>
       </div>
 
-      <div className="container flex flex-col gap-3 py-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-        <p>© {year} ELDESCO LLC.</p>
-        <p>{t.bottom}</p>
+      <div className="deck-stripe">
+        <div className="container flex flex-col gap-2 py-4 text-xs text-white/90 sm:flex-row sm:items-center sm:justify-between">
+          <p>© {year} {name}. {ui('rights')}.</p>
+          <p>{str(s['footer.bottom_text'])}</p>
+        </div>
       </div>
     </footer>
   );

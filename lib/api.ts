@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+import { API_URL } from './config';
 
 export interface CmsSection {
   id: number;
@@ -22,6 +22,29 @@ export interface CmsPage {
   sections: CmsSection[];
 }
 
+export interface AdminNavItem {
+  label: Record<string, string>;
+  page_slug?: string | null;
+  url?: string | null;
+  target?: string | null;
+  is_enabled: boolean;
+  children?: AdminNavItem[];
+}
+
+export interface AdminSite {
+  settings: Record<string, { group: string; type: string; value: unknown }>;
+  navigation: { header: AdminNavItem[]; footer: AdminNavItem[] };
+}
+
+export interface MediaItem {
+  id: number;
+  url: string;
+  path: string;
+  filename?: string | null;
+  size?: number | null;
+  created_at?: string;
+}
+
 class ApiClient {
   private client: AxiosInstance;
 
@@ -41,7 +64,13 @@ class ApiClient {
     });
 
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        const method = (response.config.method || 'get').toLowerCase();
+        const url = response.config.url || '';
+        // Any successful admin write purges the public site cache so visitors see it immediately.
+        if (method !== 'get' && !url.startsWith('/auth') && !url.startsWith('/admin/media')) this.scheduleRevalidate();
+        return response;
+      },
       (error) => {
         if (error.response?.status === 401 && typeof window !== 'undefined') {
           this.clearToken();
@@ -50,6 +79,18 @@ class ApiClient {
         return Promise.reject(error);
       }
     );
+  }
+
+  private revalidateTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private scheduleRevalidate() {
+    if (typeof window === 'undefined') return;
+    if (this.revalidateTimer) clearTimeout(this.revalidateTimer);
+    this.revalidateTimer = setTimeout(() => {
+      const token = this.getToken();
+      if (!token) return;
+      void fetch('/api/revalidate', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }).catch(() => undefined);
+    }, 400);
   }
 
   private getToken() {
@@ -94,6 +135,12 @@ class ApiClient {
     if (alt?.ru) form.append('alt_ru', alt.ru);
     return this.client.post('/admin/media', form);
   }
+
+  getAdminSite() { return this.client.get<AdminSite>('/admin/site'); }
+  updateSiteSettings(settings: Record<string, unknown>) { return this.client.put<AdminSite>('/admin/site/settings', { settings }); }
+  updateNavigation(menus: Record<string, unknown>) { return this.client.put<AdminSite>('/admin/site/navigation', { menus }); }
+  getAdminMedia() { return this.client.get<MediaItem[]>('/admin/media'); }
+  deleteMedia(id: number) { return this.client.delete(`/admin/media/${id}`); }
 
   getServices(lang = 'hy') { return this.client.get('/services', { params: { lang } }); }
   getService(id: number, lang = 'hy') { return this.client.get(`/services/${id}`, { params: { lang } }); }

@@ -1,48 +1,39 @@
-import { Hero } from '@/components/sections/Hero';
-import { ServicesSection } from '@/components/sections/ServicesSection';
-import { ProjectsSection } from '@/components/sections/ProjectsSection';
-import { TeamSection } from '@/components/sections/TeamSection';
-import { SectionRenderer } from '@/components/cms/SectionRenderer';
-import type { CmsPage } from '@/lib/api';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { getPage, getSite, str } from '@/lib/cms';
+import { isLocale } from '@/lib/config';
+import { makeUi } from '@/lib/defaults';
+import { firstImage, pageMetadata } from '@/lib/seo';
+import { PageView } from '@/components/cms/PageView';
+import { notFound } from 'next/navigation';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+type Props = { params: { locale: string } };
 
-async function getHome(locale: string): Promise<CmsPage | null> {
-  try {
-    const response = await fetch(`${API_URL}/pages/home?lang=${locale}`, {
-      next: { revalidate: 60 },
-    });
-
-    if (!response.ok) return null;
-    return (await response.json()) as CmsPage;
-  } catch {
-    return null;
-  }
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  if (!isLocale(params.locale)) return {};
+  const page = await getPage('home', params.locale);
+  return pageMetadata({ locale: params.locale, path: '', title: null, description: page?.meta_description, image: firstImage(page) });
 }
 
-export default async function HomePage({ params }: { params: { locale: string } }) {
-  const locale = ['hy', 'en', 'ru'].includes(params.locale) ? params.locale : 'hy';
-  const page = await getHome(locale);
+export default async function HomePage({ params }: Props) {
+  if (!isLocale(params.locale)) notFound();
+  const locale = params.locale;
+  const [page, site] = await Promise.all([getPage('home', locale), getSite(locale)]);
 
-  if (!page?.sections?.length) {
+  if (!page) {
+    // API unreachable: still show a useful landing screen instead of an error.
+    const ui = makeUi(site.settings, locale);
     return (
-      <>
-        <Hero />
-        <ServicesSection />
-        <ProjectsSection />
-        <TeamSection />
-      </>
+      <section className="page-hero">
+        <div className="page-hero-shade" />
+        <div className="container py-24 md:py-32">
+          <h1 className="h-display max-w-4xl">{str(site.settings['company.name'])}</h1>
+          <p className="lead mt-6 max-w-2xl !text-navy-100">{str(site.settings['company.tagline'])}</p>
+          <Link href={`/${locale}/contact`} className="btn btn-primary mt-9">{ui('contact_us')}</Link>
+        </div>
+      </section>
     );
   }
 
-  return (
-    <>
-      {page.sections
-        .filter((section) => section.is_enabled)
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((section) => (
-          <SectionRenderer key={section.id} section={section} locale={locale} />
-        ))}
-    </>
-  );
+  return <PageView page={page} locale={locale} site={site} />;
 }

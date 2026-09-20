@@ -70,82 +70,60 @@ yarn start
 
 ```
 app/
-├── layout.tsx                 # Root layout
-├── page.tsx                   # Home page
-├── globals.css               # Global styles
-├── [locale]/                 # Locale-specific pages
-│   ├── layout.tsx
-│   ├── page.tsx
-│   ├── services/
-│   ├── projects/
-│   ├── team/
-│   ├── news/
-│   └── gallery/
-├── admin/                    # Admin panel
-│   ├── layout.tsx
-│   ├── dashboard/
-│   ├── services/
-│   ├── projects/
-│   ├── team/
-│   ├── news/
-│   └── gallery/
-└── api/                      # API routes (if needed)
-
+├── [locale]/                 # public website (hy / en / ru) - root layout with <html lang>
+│   ├── page.tsx              # home  (CMS page "home")
+│   ├── [slug]/page.tsx       # any CMS page created in the admin (about, customers, contact, ...)
+│   ├── services/             # services list + /services/[slug] detail pages (CMS pages)
+│   ├── projects/, team/, news/
+├── admin/                    # admin panel (Armenian UI), noindex
+│   ├── pages/[id]            # form-based section editor
+│   ├── settings/             # company, contacts, logo, SEO, interface labels
+│   ├── navigation/           # header / footer menus (with dropdowns)
+│   ├── media/                # image library
+│   └── services, projects, team, news
+├── api/revalidate/           # purges the site cache after every admin save
+├── sitemap.ts, robots.ts
 components/
-├── layout/
-│   ├── Navbar.tsx
-│   ├── Footer.tsx
-│   └── Sidebar.tsx
-├── common/
-│   ├── Button.tsx
-│   ├── Card.tsx
-│   ├── Modal.tsx
-│   └── Loading.tsx
-└── sections/
-    ├── Hero.tsx
-    ├── Services.tsx
-    ├── Projects.tsx
-    └── Team.tsx
-
+├── layout/                   # Header, Footer (fed by /api/site)
+├── cms/                      # SectionRenderer, PageView
+├── sections/                 # Hero, gallery lightbox
+└── admin/                    # schema-driven form fields, media picker
 lib/
-├── api.ts                    # API client
-├── i18n/
-│   └── request.ts           # i18n configuration
-├── auth/
-│   └── store.ts             # Zustand auth store
-└── messages/
-    ├── en.json
-    ├── hy.json
-    └── ru.json
-
-types/
-└── index.ts                 # TypeScript types
-
-public/
-└── images/                  # Static images
+├── cms.ts                    # server-side fetchers (cached 60 s, purged on save)
+├── defaults.ts               # default interface labels + offline fallback
+├── adminSchemas.ts           # describes every section type / setting shown in the admin
+public/images/                # brand logos, presentation photos (deck/), customer logos
 ```
 
-## Available Pages
+Everything visible on the site - texts, images, menus, footer, labels - is stored in the API and edited
+in the admin panel. `lib/defaults.ts` only supplies defaults so the site still renders if the API is down.
 
-### Public Pages
-- `/en` - Home page (English)
-- `/hy` - Գլխավոր (Armenian)
-- `/ru` - Главная (Russian)
-- `/{locale}/services` - Services listing
-- `/{locale}/projects` - Projects gallery
-- `/{locale}/team` - Team members
-- `/{locale}/news` - News/blog
-- `/{locale}/gallery` - Photo gallery
+## Production deployment (https://eldesco.am)
 
-### Admin Pages (Protected)
-- `/admin/login` - Admin login
-- `/admin/dashboard` - Dashboard
-- `/admin/services` - Manage services
-- `/admin/projects` - Manage projects
-- `/admin/team` - Manage team
-- `/admin/news` - Manage news
-- `/admin/gallery` - Manage gallery
-- `/admin/settings` - Site settings
+```bash
+cp .env.example .env.production.local   # set NEXT_PUBLIC_API_URL=https://api.eldesco.am/api
+                                        #     NEXT_PUBLIC_SITE_URL=https://eldesco.am
+npm ci || npm install
+npm run build          # NEXT_PUBLIC_* values are baked in at build time
+npm start -- -p 3000   # keep alive with pm2 / systemd
+```
+
+Nginx in front of `next start`:
+
+```nginx
+server {
+    server_name eldesco.am www.eldesco.am;
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+Redirect `www` to the apex domain (or the other way round) and add TLS with certbot.
+The admin panel lives at https://eldesco.am/admin. The API must list `https://eldesco.am` in `CORS_ALLOWED_ORIGINS`.
 
 ## API Integration
 

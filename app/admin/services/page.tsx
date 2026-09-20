@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api';
+import { ImageInput, inputCls } from '@/components/admin/fields';
+import { mediaUrl } from '@/lib/media';
 
 type RawService = {
   id: number;
+  slug?: string | null;
+  image_url?: string | null;
   title_hy: string;
   title_en: string;
   title_ru?: string | null;
@@ -16,13 +20,14 @@ type RawService = {
 };
 
 type FormState = {
+  slug: string; image_url: string;
   title_hy: string; title_en: string; title_ru: string;
   description_hy: string; description_en: string; description_ru: string;
   icon: string; order_index: number;
 };
 
 type Lang = 'hy' | 'en' | 'ru';
-const emptyForm = (): FormState => ({ title_hy: '', title_en: '', title_ru: '', description_hy: '', description_en: '', description_ru: '', icon: '', order_index: 0 });
+const emptyForm = (): FormState => ({ slug: '', image_url: '', title_hy: '', title_en: '', title_ru: '', description_hy: '', description_en: '', description_ru: '', icon: '', order_index: 0 });
 const langLabel: Record<Lang, string> = { hy: 'Հայերեն', en: 'English', ru: 'Русский' };
 
 export default function AdminServicesPage() {
@@ -49,6 +54,7 @@ export default function AdminServicesPage() {
   const edit = (service: RawService) => {
     setEditingId(service.id);
     setForm({
+      slug: service.slug || '', image_url: service.image_url || '',
       title_hy: service.title_hy || '', title_en: service.title_en || '', title_ru: service.title_ru || '',
       description_hy: service.description_hy || '', description_en: service.description_en || '', description_ru: service.description_ru || '',
       icon: service.icon || '', order_index: service.order_index || 0,
@@ -62,11 +68,13 @@ export default function AdminServicesPage() {
     if (!form.title_hy.trim() || !form.title_en.trim()) { setError('Հայերեն և անգլերեն վերնագրերը պարտադիր են։'); return; }
     setSaving(true); setError('');
     try {
-      if (editingId === 'new') await apiClient.createService(form);
-      else if (typeof editingId === 'number') await apiClient.updateService(editingId, form);
+      const payload = { ...form, slug: form.slug.trim() || null, image_url: form.image_url || null };
+      if (editingId === 'new') await apiClient.createService(payload);
+      else if (typeof editingId === 'number') await apiClient.updateService(editingId, payload);
       setEditingId(null); setForm(emptyForm()); await load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Պահպանումը չհաջողվեց։');
+      const errors = err.response?.data?.errors;
+      setError(errors ? Object.values(errors).flat().join(' ') : err.response?.data?.message || 'Պահպանումը չհաջողվեց։');
     } finally { setSaving(false); }
   };
 
@@ -89,7 +97,9 @@ export default function AdminServicesPage() {
         <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
           {loading ? <div className="p-10 text-sm text-slate-500">Բեռնվում է…</div> : services.map((service, index) => (
             <div key={service.id} className={`group flex items-center gap-4 border-b border-slate-100 p-5 last:border-0 transition ${editingId === service.id ? 'bg-orange-50/60' : 'hover:bg-slate-50/60'}`}>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-lg text-white">{service.icon || String(index + 1).padStart(2, '0')}</div>
+              {service.image_url
+                ? <img src={mediaUrl(service.image_url)} alt="" className="h-12 w-16 shrink-0 rounded-xl object-cover" />
+                : <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-lg text-white">{service.icon || String(index + 1).padStart(2, '0')}</div>}
               <div className="min-w-0 flex-1"><h3 className="truncate font-extrabold text-slate-950">{service.title_hy}</h3><p className="mt-1 line-clamp-1 text-xs text-slate-500">{service.description_hy || 'Նկարագրություն չկա'}</p></div>
               <div className="hidden text-xs font-bold text-slate-400 sm:block">#{service.order_index ?? index + 1}</div>
               <div className="flex gap-2"><button onClick={() => edit(service)} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:border-orange-200 hover:text-orange-600">Խմբագրել</button><button onClick={() => void remove(service.id)} className="rounded-xl border border-red-100 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50">Ջնջել</button></div>
@@ -107,6 +117,8 @@ export default function AdminServicesPage() {
             <div className="mt-6 space-y-5">
               <label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Վերնագիր · {langLabel[lang]}</span><input value={form[`title_${lang}`]} onChange={(e) => setForm({ ...form, [`title_${lang}`]: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100" /></label>
               <label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Նկարագրություն · {langLabel[lang]}</span><textarea value={form[`description_${lang}`]} onChange={(e) => setForm({ ...form, [`description_${lang}`]: e.target.value })} rows={7} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 outline-none focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100" /></label>
+              <div><span className="mb-2 block text-sm font-bold text-slate-700">Ծառայության նկար</span><ImageInput value={form.image_url} onPick={({ path }) => setForm({ ...form, image_url: path })} onClear={() => setForm({ ...form, image_url: '' })} /><p className="mt-1.5 text-xs text-slate-400">Ցուցադրվում է գլխավոր էջում և «Ծառայություններ» էջում</p></div>
+              <label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Էջի հասցե (slug)</span><input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className={inputCls} placeholder="led-displays" /><span className="mt-1.5 block text-xs text-slate-400">Ծառայության մանրամասն էջը՝ /services/{form.slug || 'slug'}։ Դա «Կայքի էջեր»-ում նույն slug-ով էջն է. ստեղծեք այն, եթե դեռ չկա։</span></label>
               <div className="grid gap-4 sm:grid-cols-2"><label><span className="mb-2 block text-sm font-bold text-slate-700">Icon / նշան</span><input value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3" placeholder="⚡" /></label><label><span className="mb-2 block text-sm font-bold text-slate-700">Հերթականություն</span><input type="number" value={form.order_index} onChange={(e) => setForm({ ...form, order_index: Number(e.target.value) })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3" /></label></div>
             </div>
 

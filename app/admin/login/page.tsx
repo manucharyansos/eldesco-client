@@ -8,18 +8,24 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const { login, isLoading } = useAuthStore();
+  const { login } = useAuthStore();
+  // The store's isLoading starts as true (it waits for checkAuth, which never runs on this page),
+  // so a direct visit to /admin/login used to leave the button disabled forever.
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSubmitting(true);
 
     try {
       await login(email, password);
       router.push('/admin/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Մուտքը չհաջողվեց։ Ստուգիր տվյալները։');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -92,10 +98,10 @@ export default function AdminLoginPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={submitting}
               className="mt-2 flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-4 text-sm font-extrabold text-white shadow-xl shadow-slate-950/10 transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isLoading ? 'Մուտք ենք գործում…' : 'Մուտք գործել'}
+              {submitting ? 'Մուտք ենք գործում…' : 'Մուտք գործել'}
             </button>
           </form>
 

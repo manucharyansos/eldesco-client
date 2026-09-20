@@ -1,68 +1,54 @@
-'use client';
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { API_URL, isLocale } from '@/lib/config';
+import { getSite } from '@/lib/cms';
+import { makeUi } from '@/lib/defaults';
+import { pageMetadata } from '@/lib/seo';
+import { formatDate } from '@/lib/utils';
+import { Img } from '@/components/common/Img';
+import type { NewsItem } from '@/types';
 
-import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { useParams } from 'next/navigation';
-import { apiClient } from '@/lib/api';
-import { NewsItem, PaginatedResponse } from '@/types';
-import { NewsCard } from '@/components/common/NewsCard';
-import { Loading } from '@/components/common/Loading';
+type Props = { params: { locale: string } };
 
-export default function NewsPage() {
-  const t = useTranslations('common');
-  const params = useParams();
-  const locale = params.locale as string;
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+async function loadNews(locale: string): Promise<NewsItem[]> {
+  try {
+    const r = await fetch(`${API_URL}/news?lang=${locale}&limit=30`, { next: { revalidate: 60, tags: ['cms'] } });
+    if (!r.ok) return [];
+    const body = await r.json();
+    return Array.isArray(body) ? body : body?.data ?? [];
+  } catch { return []; }
+}
 
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.getNews(locale, page, 10);
-        setNews(response.data.data);
-        setTotalPages(response.data.pagination.last_page);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load news');
-      } finally {
-        setLoading(false);
-      }
-    };
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  if (!isLocale(params.locale)) return {};
+  const site = await getSite(params.locale);
+  return pageMetadata({ locale: params.locale, path: 'news', title: makeUi(site.settings, params.locale)('news_title') });
+}
 
-    fetchNews();
-  }, [locale, page]);
-
-  if (loading) return <Loading />;
-  if (error) return <div className="text-center py-12 text-red-600">{error}</div>;
+export default async function NewsPage({ params }: Props) {
+  if (!isLocale(params.locale)) notFound();
+  const [items, site] = await Promise.all([loadNews(params.locale), getSite(params.locale)]);
+  const ui = makeUi(site.settings, params.locale);
 
   return (
-    <div className="container py-12">
-      <h1 className="text-4xl font-bold mb-12 text-center">{t('news')}</h1>
-      <div className="space-y-8">
-        {news.map((item) => (
-          <NewsCard key={item.id} news={item} locale={locale} />
-        ))}
-      </div>
-
-      {/* Pagination */}
-      <div className="flex justify-center gap-2 mt-12">
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-          <button
-            key={p}
-            onClick={() => setPage(p)}
-            className={`px-4 py-2 rounded ${
-              p === page
-                ? 'bg-accent-500 text-white'
-                : 'bg-gray-200 hover:bg-gray-300'
-            }`}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
-    </div>
+    <>
+      <section className="page-hero"><div className="page-hero-shade" /><div className="container py-16 md:py-24"><h1 className="h-page">{ui('news_title')}</h1></div></section>
+      <section className="section">
+        <div className="container">
+          {items.length === 0 ? <p className="lead">{ui('no_items')}</p> : (
+            <ul className="grid gap-x-8 gap-y-12 md:grid-cols-2 lg:grid-cols-3">
+              {items.map((n) => (
+                <li key={n.id}>
+                  {n.image && <div className="aspect-[16/10] overflow-hidden rounded-md bg-steel-100"><Img src={n.image} alt="" className="h-full w-full object-cover" /></div>}
+                  <p className="mt-5 text-sm font-semibold text-steel-500">{formatDate(n.createdAt, params.locale)}</p>
+                  <h2 className="h-item mt-1">{n.title}</h2>
+                  {n.excerpt && <p className="mt-3 line-clamp-4 leading-7 text-steel-600">{n.excerpt}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+    </>
   );
 }

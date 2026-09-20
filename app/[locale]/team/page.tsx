@@ -1,48 +1,51 @@
-'use client';
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { API_URL } from '@/lib/config';
+import { isLocale } from '@/lib/config';
+import { getSite } from '@/lib/cms';
+import { makeUi } from '@/lib/defaults';
+import { pageMetadata } from '@/lib/seo';
+import { Img } from '@/components/common/Img';
+import type { TeamMember } from '@/types';
 
-import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { useParams } from 'next/navigation';
-import { apiClient } from '@/lib/api';
-import { TeamMember } from '@/types';
-import { TeamMemberCard } from '@/components/common/TeamMemberCard';
-import { Loading } from '@/components/common/Loading';
+type Props = { params: { locale: string } };
 
-export default function TeamPage() {
-  const t = useTranslations('common');
-  const params = useParams();
-  const locale = params.locale as string;
-  const [members, setMembers] = useState<TeamMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+async function loadTeam(locale: string): Promise<TeamMember[]> {
+  try {
+    const r = await fetch(`${API_URL}/team?lang=${locale}`, { next: { revalidate: 60, tags: ['cms'] } });
+    return r.ok ? await r.json() : [];
+  } catch { return []; }
+}
 
-  useEffect(() => {
-    const fetchTeam = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.getTeam(locale);
-        setMembers(response.data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load team');
-      } finally {
-        setLoading(false);
-      }
-    };
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  if (!isLocale(params.locale)) return {};
+  const site = await getSite(params.locale);
+  return pageMetadata({ locale: params.locale, path: 'team', title: makeUi(site.settings, params.locale)('team_title') });
+}
 
-    fetchTeam();
-  }, [locale]);
-
-  if (loading) return <Loading />;
-  if (error) return <div className="text-center py-12 text-red-600">{error}</div>;
+export default async function TeamPage({ params }: Props) {
+  if (!isLocale(params.locale)) notFound();
+  const [members, site] = await Promise.all([loadTeam(params.locale), getSite(params.locale)]);
+  const ui = makeUi(site.settings, params.locale);
 
   return (
-    <div className="container py-12">
-      <h1 className="text-4xl font-bold mb-12 text-center">{t('team')}</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        {members.map((member) => (
-          <TeamMemberCard key={member.id} member={member} />
-        ))}
-      </div>
-    </div>
+    <>
+      <section className="page-hero"><div className="page-hero-shade" /><div className="container py-16 md:py-24"><h1 className="h-page">{ui('team_title')}</h1></div></section>
+      <section className="section">
+        <div className="container">
+          {members.length === 0 ? <p className="lead">{ui('no_items')}</p> : (
+            <ul className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+              {members.map((m) => (
+                <li key={m.id}>
+                  <div className="aspect-[4/5] overflow-hidden rounded-md bg-steel-100"><Img src={m.image} alt={m.name} className="h-full w-full object-cover" /></div>
+                  <h2 className="mt-4 text-lg font-bold text-navy-800">{m.name}</h2>
+                  {m.position && <p className="mt-1 text-steel-600">{m.position}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+    </>
   );
 }

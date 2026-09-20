@@ -1,22 +1,20 @@
 /** @type {import('next').NextConfig} */
-const withNextIntl = require('next-intl/plugin')(
-  './lib/i18n/request.ts'
-);
-
 const nextConfig = {
   images: {
     unoptimized: true,
-    domains: ['localhost', '127.0.0.1', 'api.eldesco.am']
   },
-  redirects: async () => {
+  async redirects() {
+    return [{ source: '/', destination: '/hy', permanent: false }];
+  },
+  async headers() {
     return [
       {
-        source: '/',
-        destination: '/hy',
-        permanent: false
-      }
+        // Static assets (photos, logos) never change under the same name.
+        source: '/images/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
     ];
-  }
+  },
 };
 
-module.exports = withNextIntl(nextConfig);
+module.exports = nextConfig;

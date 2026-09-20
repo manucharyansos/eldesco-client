@@ -1,41 +1,34 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
+import { SECTION_SCHEMAS, emptyContent, schemaFor, type FieldDef } from '@/lib/adminSchemas';
+import { FieldRenderer, FieldsForm, LangFilterContext, LanguageSwitch, asLocalized, inputCls, type Lang } from '@/components/admin/fields';
 
-type Localized = { hy: string; en: string; ru: string };
-type Lang = keyof Localized;
+type Content = Record<string, unknown>;
+type EditableSection = { uid: string; id?: number; type: string; key: string; content: Content; is_enabled: boolean; open: boolean; json: boolean; jsonText: string };
+type ApiSection = { id: number; type: string; key?: string | null; content?: Content; is_enabled: boolean; sort_order: number };
 
-type EditableSection = {
-  id?: number;
-  type: string;
-  key: string;
-  contentText: string;
-  is_enabled: boolean;
-  sort_order: number;
+let counter = 0;
+const uid = () => `s${Date.now()}-${counter++}`;
+
+const META_FIELDS: FieldDef[] = [
+  { type: 'localized', key: 'title', label: 'Էջի անվանումը', help: 'Ցուցադրվում է դիտարկչի ներդիրում և որպես էջի վերնագիր, եթե էջում վերնագրի բաժին չկա' },
+  { type: 'localized', key: 'seo_title', label: 'SEO վերնագիր (ըստ ցանկության)' },
+  { type: 'localized_textarea', key: 'seo_description', label: 'SEO նկարագրություն', help: 'Ցուցադրվում է Google-ի արդյունքներում և հղումը կիսելիս (մինչև 160 նիշ)' },
+];
+
+const toEditable = (s: ApiSection, index: number): EditableSection => ({
+  uid: uid(), id: s.id, type: s.type, key: s.key ?? '', content: (s.content ?? {}) as Content, is_enabled: s.is_enabled, open: index < 2, json: false, jsonText: '',
+});
+
+const summarize = (content: Content): string => {
+  const t = content.title;
+  const v = asLocalized(t);
+  return v.hy || v.en || v.ru || '';
 };
-
-type AdminPage = {
-  id: number;
-  slug: string;
-  title?: Partial<Localized>;
-  seo_title?: Partial<Localized>;
-  seo_description?: Partial<Localized>;
-  is_published: boolean;
-  sort_order: number;
-  sections?: Array<{
-    id: number;
-    type: string;
-    key?: string | null;
-    content?: Record<string, unknown>;
-    is_enabled: boolean;
-    sort_order: number;
-  }>;
-};
-
-const emptyLocalized = (): Localized => ({ hy: '', en: '', ru: '' });
-const langLabel: Record<Lang, string> = { hy: 'Հայերեն', en: 'English', ru: 'Русский' };
 
 export default function PageEditor() {
   const params = useParams<{ id: string }>();
@@ -44,244 +37,219 @@ export default function PageEditor() {
   const pageId = isNew ? null : Number(params.id);
 
   const [slug, setSlug] = useState('');
-  const [title, setTitle] = useState<Localized>(emptyLocalized());
-  const [seoTitle, setSeoTitle] = useState<Localized>(emptyLocalized());
-  const [seoDescription, setSeoDescription] = useState<Localized>(emptyLocalized());
+  const [meta, setMeta] = useState<Content>({ title: { hy: '', en: '', ru: '' }, seo_title: { hy: '', en: '', ru: '' }, seo_description: { hy: '', en: '', ru: '' } });
   const [published, setPublished] = useState(true);
   const [sortOrder, setSortOrder] = useState(0);
   const [sections, setSections] = useState<EditableSection[]>([]);
+  const [serviceSlugs, setServiceSlugs] = useState<string[]>([]);
+  const [lang, setLang] = useState<'all' | Lang>('all');
+  const [addType, setAddType] = useState('text');
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
-  const heading = useMemo(() => (isNew ? 'Նոր էջ' : `Էջ #${pageId}`), [isNew, pageId]);
+  const apply = useCallback((page: any) => {
+    setSlug(page.slug ?? '');
+    setMeta({ title: asLocalized(page.title), seo_title: asLocalized(page.seo_title), seo_description: asLocalized(page.seo_description) });
+    setPublished(Boolean(page.is_published));
+    setSortOrder(page.sort_order ?? 0);
+    setSections(([...(page.sections ?? [])] as ApiSection[]).sort((a, b) => a.sort_order - b.sort_order).map(toEditable));
+  }, []);
 
   useEffect(() => {
+    apiClient.getAdminServices().then((r) => setServiceSlugs((r.data ?? []).map((s: { slug?: string }) => s.slug).filter(Boolean))).catch(() => undefined);
     if (isNew || !pageId) return;
-
-    const load = async () => {
+    (async () => {
       try {
         setLoading(true);
         const response = await apiClient.getAdminPage(pageId);
-        const page: AdminPage = response.data?.data ?? response.data;
-        if (!page) throw new Error('Page not found');
+        apply(response.data?.data ?? response.data);
+      } catch { setError('Չհաջողվեց բեռնել էջը։'); }
+      finally { setLoading(false); }
+    })();
+  }, [isNew, pageId, apply]);
 
-        setSlug(page.slug ?? '');
-        setTitle({ ...emptyLocalized(), ...(page.title ?? {}) });
-        setSeoTitle({ ...emptyLocalized(), ...(page.seo_title ?? {}) });
-        setSeoDescription({ ...emptyLocalized(), ...(page.seo_description ?? {}) });
-        setPublished(Boolean(page.is_published));
-        setSortOrder(page.sort_order ?? 0);
-        setSections((page.sections ?? []).map((section) => ({
-          id: section.id,
-          type: section.type,
-          key: section.key ?? '',
-          contentText: JSON.stringify(section.content ?? {}, null, 2),
-          is_enabled: section.is_enabled,
-          sort_order: section.sort_order,
-        })));
-      } catch {
-        setError('Չհաջողվեց բեռնել էջը։');
-      } finally {
-        setLoading(false);
-      }
-    };
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [dirty]);
 
-    void load();
-  }, [isNew, pageId]);
+  const touch = () => { setDirty(true); setNotice(''); };
+  const patchSection = (u: string, patch: Partial<EditableSection>) => { touch(); setSections((cur) => cur.map((s) => (s.uid === u ? { ...s, ...patch } : s))); };
 
-  const updateLocalized = (setter: React.Dispatch<React.SetStateAction<Localized>>, lang: Lang, value: string) =>
-    setter((current) => ({ ...current, [lang]: value }));
-
-  const updateSection = (index: number, patch: Partial<EditableSection>) => {
-    setSections((current) => current.map((section, i) => (i === index ? { ...section, ...patch } : section)));
+  const move = (index: number, delta: number) => {
+    const j = index + delta;
+    if (j < 0 || j >= sections.length) return;
+    touch();
+    setSections((cur) => { const next = [...cur]; [next[index], next[j]] = [next[j], next[index]]; return next; });
   };
 
   const addSection = () => {
-    setSections((current) => [
-      ...current,
-      {
-        type: 'intro',
-        key: `section-${current.length + 1}`,
-        contentText: '{\n  "title": {\n    "hy": "",\n    "en": "",\n    "ru": ""\n  }\n}',
-        is_enabled: true,
-        sort_order: current.length,
-      },
-    ]);
+    touch();
+    setSections((cur) => [...cur, { uid: uid(), type: addType, key: `${addType}-${cur.length + 1}`, content: emptyContent(addType), is_enabled: true, open: true, json: false, jsonText: '' }]);
   };
 
+  const duplicate = (s: EditableSection) => {
+    touch();
+    setSections((cur) => { const i = cur.findIndex((x) => x.uid === s.uid); const copy = { ...s, uid: uid(), id: undefined, key: `${s.key}-copy`, content: JSON.parse(JSON.stringify(s.content)) }; return [...cur.slice(0, i + 1), copy, ...cur.slice(i + 1)]; });
+  };
+
+  const remove = (s: EditableSection) => {
+    if (!confirm('Հեռացնե՞լ այս բաժինը էջից։')) return;
+    touch();
+    setSections((cur) => cur.filter((x) => x.uid !== s.uid));
+  };
+
+  const publicPath = useMemo(() => {
+    if (!slug) return '';
+    if (slug === 'home') return '/hy';
+    return serviceSlugs.includes(slug) ? `/hy/services/${slug}` : `/hy/${slug}`;
+  }, [slug, serviceSlugs]);
+
   const save = async () => {
-    setError('');
+    setError(''); setNotice('');
+    const cleanSlug = slug.trim().toLowerCase();
+    if (!cleanSlug) { setError('Էջի հասցեն (slug) պարտադիր է։'); return; }
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(cleanSlug)) { setError('Հասցեն կարող է պարունակել միայն լատինական փոքրատառեր, թվեր և գծիկներ (օր.՝ our-team)։'); return; }
     setSaving(true);
     try {
-      const parsedSections = sections.map((section, index) => {
-        let content: Record<string, unknown> = {};
-        try {
-          content = JSON.parse(section.contentText || '{}');
-        } catch {
-          throw new Error(`Բաժին ${index + 1}-ի JSON-ը սխալ է։`);
-        }
-        return {
-          type: section.type,
-          key: section.key || null,
-          content,
-          settings: {},
-          is_enabled: section.is_enabled,
-          sort_order: section.sort_order,
-        };
-      });
-
-      const payload = { slug: slug.trim(), title, seo_title: seoTitle, seo_description: seoDescription, is_published: published, sort_order: sortOrder, sections: parsedSections };
-      if (!payload.slug) throw new Error('Slug-ը պարտադիր է։');
-
-      if (isNew) await apiClient.createPage(payload);
-      else if (pageId) await apiClient.updatePage(pageId, payload);
-
-      router.push('/admin/pages');
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Չհաջողվեց պահպանել էջը։');
-    } finally {
-      setSaving(false);
-    }
+      const payload = {
+        slug: cleanSlug, title: meta.title, seo_title: meta.seo_title, seo_description: meta.seo_description,
+        is_published: published, sort_order: sortOrder,
+        sections: sections.map((s, i) => ({ type: s.type, key: s.key || null, content: s.content, settings: {}, is_enabled: s.is_enabled, sort_order: i })),
+      };
+      const response = isNew ? await apiClient.createPage(payload) : await apiClient.updatePage(pageId as number, payload);
+      const saved = response.data?.data ?? response.data;
+      setDirty(false);
+      if (isNew && saved?.id) { router.replace(`/admin/pages/${saved.id}`); return; }
+      apply(saved);
+      setNotice('Պահպանված է։ Փոփոխությունները արդեն երևում են կայքում։');
+    } catch (err: any) {
+      const errors = err?.response?.data?.errors;
+      setError(errors ? Object.values(errors).flat().join(' ') : err?.response?.data?.message || 'Չհաջողվեց պահպանել էջը։');
+    } finally { setSaving(false); }
   };
 
   if (loading) return <div className="rounded-3xl border border-slate-200 bg-white p-10 text-sm text-slate-500">Բեռնվում է…</div>;
 
   return (
-    <div className="space-y-7">
-      <div className="flex flex-wrap items-end justify-between gap-5">
-        <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[.24em] text-orange-600">CMS խմբագրիչ</p>
-          <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">{heading}</h2>
-          <p className="mt-3 text-sm text-slate-500">Կառավարիր էջի բովանդակությունը, լեզուները, SEO-ն և բաժինները։</p>
+    <LangFilterContext.Provider value={lang}>
+      <div className="mx-auto max-w-4xl space-y-7 pb-28">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <Link href="/admin/pages" className="text-sm font-bold text-slate-500 hover:text-orange-600">← Բոլոր էջերը</Link>
+            <h2 className="mt-2 text-3xl font-black tracking-tight">{isNew ? 'Նոր էջ' : asLocalized(meta.title).hy || slug}</h2>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <LanguageSwitch value={lang} onChange={setLang} />
+            {publicPath && <a href={publicPath} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:border-orange-300 hover:text-orange-600">Բացել էջը ↗</a>}
+          </div>
         </div>
-        <div className="flex gap-3">
-          <button onClick={() => router.push('/admin/pages')} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50">Չեղարկել</button>
-          <button onClick={() => void save()} disabled={saving} className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-extrabold text-white shadow-lg transition hover:bg-orange-500 disabled:opacity-50">
-            {saving ? 'Պահպանվում է…' : 'Պահպանել փոփոխությունները'}
-          </button>
-        </div>
-      </div>
 
-      {error && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
+        {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
+        {notice && <div role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">{notice}</div>}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_.42fr]">
-        <section className="rounded-[26px] border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-slate-400">Հիմնական կարգավորումներ</p>
-          <div className="mt-5 grid gap-5 md:grid-cols-3">
-            <label className="md:col-span-2">
-              <span className="mb-2 block text-sm font-bold text-slate-700">Slug / URL</span>
-              <input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="about" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100" />
+        <section className="space-y-5 rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <h3 className="text-lg font-black">Էջի տվյալներ</h3>
+          <FieldsForm fields={META_FIELDS} value={meta} onChange={(v) => { touch(); setMeta(v); }} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-1.5 block text-[13px] font-bold text-slate-700">Էջի հասցե (slug)</span>
+              <input value={slug} onChange={(e) => { touch(); setSlug(e.target.value); }} disabled={slug === 'home'} className={`${inputCls} disabled:opacity-60`} placeholder="about" />
+              <span className="mt-1.5 block text-xs text-slate-400">{publicPath ? `Հասցեն կայքում՝ ${publicPath}` : 'Միայն լատինական տառեր, թվեր և գծիկներ'}</span>
             </label>
-            <label>
-              <span className="mb-2 block text-sm font-bold text-slate-700">Դասավորություն</span>
-              <input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-orange-400" />
+            <label className="block">
+              <span className="mb-1.5 block text-[13px] font-bold text-slate-700">Հերթականություն</span>
+              <input type="number" value={sortOrder} onChange={(e) => { touch(); setSortOrder(Number(e.target.value)); }} className={inputCls} />
             </label>
           </div>
-          <label className="mt-5 inline-flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3">
-            <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} className="h-4 w-4 accent-orange-500" />
-            <span className="text-sm font-bold text-slate-700">Հրապարակված է</span>
+          <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-slate-50 px-4 py-3">
+            <input type="checkbox" checked={published} onChange={(e) => { touch(); setPublished(e.target.checked); }} className="h-4 w-4 accent-orange-500" />
+            <span className="text-sm font-bold text-slate-700">Էջը հրապարակված է (երևում է կայքում)</span>
           </label>
         </section>
 
-        <MediaUploader />
-      </div>
+        <div className="space-y-4">
+          <div className="flex items-end justify-between"><h3 className="text-lg font-black">Էջի բաժինները <span className="font-semibold text-slate-400">({sections.length})</span></h3><p className="text-xs text-slate-400">Բաժինները կայքում երևում են այս հերթականությամբ</p></div>
 
-      <LocalizedFields title="Էջի վերնագիր" value={title} onChange={(lang, value) => updateLocalized(setTitle, lang, value)} />
-      <LocalizedFields title="SEO վերնագիր" value={seoTitle} onChange={(lang, value) => updateLocalized(setSeoTitle, lang, value)} />
-      <LocalizedFields title="SEO նկարագրություն" value={seoDescription} multiline onChange={(lang, value) => updateLocalized(setSeoDescription, lang, value)} />
+          {sections.map((section, index) => {
+            const schema = schemaFor(section.type);
+            return (
+              <article key={section.uid} className={`rounded-[24px] border bg-white shadow-sm transition ${section.is_enabled ? 'border-slate-200' : 'border-dashed border-slate-300 opacity-70'}`}>
+                <div className="flex flex-wrap items-center gap-2 px-4 py-3 sm:px-5">
+                  <button type="button" onClick={() => patchSection(section.uid, { open: !section.open })} aria-expanded={section.open} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                    <span className={`text-xs text-slate-400 transition ${section.open ? 'rotate-90' : ''}`}>▶</span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[15px] font-extrabold text-slate-900">{schema?.label ?? section.type}</span>
+                      <span className="block truncate text-xs text-slate-400">{summarize(section.content) || schema?.description || section.key}</span>
+                    </span>
+                  </button>
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-500" title="Անջատված բաժինը կայքում չի երևա">
+                    <input type="checkbox" checked={section.is_enabled} onChange={(e) => patchSection(section.uid, { is_enabled: e.target.checked })} className="h-4 w-4 accent-orange-500" />Երևում է
+                  </label>
+                  <div className="flex gap-1">
+                    <button type="button" onClick={() => move(index, -1)} disabled={index === 0} className="h-9 w-9 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-25" aria-label="Բարձրացնել">↑</button>
+                    <button type="button" onClick={() => move(index, 1)} disabled={index === sections.length - 1} className="h-9 w-9 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-25" aria-label="Իջեցնել">↓</button>
+                    <button type="button" onClick={() => duplicate(section)} className="h-9 rounded-lg px-2.5 text-xs font-bold text-slate-500 hover:bg-slate-100">Կրկնօրինակել</button>
+                    <button type="button" onClick={() => remove(section)} className="h-9 rounded-lg px-2.5 text-xs font-bold text-red-500 hover:bg-red-50">Հեռացնել</button>
+                  </div>
+                </div>
 
-      <section className="space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-orange-600">Էջի կառուցվածք</p>
-            <h3 className="mt-2 text-2xl font-black text-slate-950">Բովանդակության բաժիններ</h3>
-            <p className="mt-2 text-sm text-slate-500">Միացրու, անջատիր և դասավորիր էջի յուրաքանչյուր բլոկը։</p>
+                {section.open && (
+                  <div className="space-y-5 border-t border-slate-100 p-5 sm:p-7">
+                    {schema && !section.json ? (
+                      <>
+                        {schema.description && <p className="rounded-xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500">{schema.description}</p>}
+                        <FieldsForm fields={schema.fields} value={section.content} onChange={(next) => patchSection(section.uid, { content: next })} />
+                      </>
+                    ) : (
+                      <label className="block">
+                        <span className="mb-1.5 block text-[13px] font-bold text-slate-700">{schema ? 'Բովանդակություն (JSON)' : `«${section.type}» տեսակի բաժինը խմբագրվում է JSON-ով`}</span>
+                        <textarea
+                          rows={14}
+                          spellCheck={false}
+                          value={section.jsonText || JSON.stringify(section.content, null, 2)}
+                          onChange={(e) => {
+                            const text = e.target.value;
+                            try { patchSection(section.uid, { jsonText: text, content: JSON.parse(text || '{}') }); setError(''); }
+                            catch { patchSection(section.uid, { jsonText: text }); }
+                          }}
+                          className={`${inputCls} font-mono text-xs leading-5`}
+                        />
+                      </label>
+                    )}
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                      <label className="flex items-center gap-2 text-xs font-bold text-slate-400">Բաժնի ներքին անուն
+                        <input value={section.key} onChange={(e) => patchSection(section.uid, { key: e.target.value })} className="w-44 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600" />
+                      </label>
+                      {schema && <button type="button" onClick={() => patchSection(section.uid, { json: !section.json, jsonText: '' })} className="text-xs font-bold text-slate-400 hover:text-orange-600">{section.json ? '← Վերադառնալ ձևին' : 'Ընդլայնված՝ JSON'}</button>}
+                    </div>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+
+          <div className="flex flex-wrap items-center gap-3 rounded-[24px] border border-dashed border-slate-300 bg-white/60 p-5">
+            <select value={addType} onChange={(e) => setAddType(e.target.value)} className={`${inputCls} !w-auto min-w-[16rem]`} aria-label="Բաժնի տեսակ">
+              {SECTION_SCHEMAS.map((s) => <option key={s.type} value={s.type}>{s.label}</option>)}
+            </select>
+            <button type="button" onClick={addSection} className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-orange-500">+ Ավելացնել բաժին</button>
+            <p className="basis-full text-xs text-slate-400 sm:basis-auto">{SECTION_SCHEMAS.find((s) => s.type === addType)?.description}</p>
           </div>
-          <button onClick={addSection} className="rounded-2xl bg-orange-500 px-4 py-3 text-sm font-extrabold text-white transition hover:bg-orange-600">+ Ավելացնել բաժին</button>
-        </div>
-
-        {sections.map((section, index) => (
-          <div key={section.id ?? `${section.key}-${index}`} className="rounded-[26px] border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-xs font-black text-white">{String(index + 1).padStart(2, '0')}</span>
-                <div><p className="font-extrabold text-slate-900">{section.key || 'Նոր բաժին'}</p><p className="text-xs text-slate-400">{section.type}</p></div>
-              </div>
-              <label className="flex items-center gap-2 text-xs font-bold text-slate-600"><input type="checkbox" checked={section.is_enabled} onChange={(e) => updateSection(index, { is_enabled: e.target.checked })} className="accent-orange-500" /> Միացված</label>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-4">
-              <label>
-                <span className="mb-2 block text-xs font-bold text-slate-500">Տեսակ</span>
-                <select value={section.type} onChange={(e) => updateSection(index, { type: e.target.value })} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-orange-400">
-                  <option value="hero">Hero</option><option value="intro">Intro</option><option value="rich_text">Rich text</option><option value="services">Services</option><option value="bullets">Bullets</option><option value="stats">Stats</option><option value="customers">Customers</option><option value="timeline">Timeline</option><option value="feature_split">Feature + image</option><option value="company_details">Company details</option><option value="cta">CTA</option><option value="contact">Contact</option>
-                </select>
-              </label>
-              <label className="md:col-span-2"><span className="mb-2 block text-xs font-bold text-slate-500">Key</span><input value={section.key} onChange={(e) => updateSection(index, { key: e.target.value })} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-orange-400" /></label>
-              <label><span className="mb-2 block text-xs font-bold text-slate-500">Հերթականություն</span><input type="number" value={section.sort_order} onChange={(e) => updateSection(index, { sort_order: Number(e.target.value) })} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-orange-400" /></label>
-            </div>
-
-            <label className="mt-5 block">
-              <span className="mb-2 flex items-center justify-between text-xs font-bold text-slate-500"><span>Բովանդակություն (JSON)</span><span className="font-medium text-slate-400">HY / EN / RU</span></span>
-              <textarea value={section.contentText} onChange={(e) => updateSection(index, { contentText: e.target.value })} rows={14} spellCheck={false} className="w-full rounded-2xl border border-slate-800 bg-[#08111f] p-4 font-mono text-xs leading-6 text-slate-200 outline-none focus:border-orange-500" />
-            </label>
-
-            <button onClick={() => setSections((current) => current.filter((_, i) => i !== index))} className="mt-4 rounded-xl border border-red-100 px-4 py-2.5 text-xs font-bold text-red-500 transition hover:bg-red-50">Ջնջել բաժինը</button>
-          </div>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function MediaUploader() {
-  const [uploading, setUploading] = useState(false);
-  const [url, setUrl] = useState('');
-  const [error, setError] = useState('');
-
-  const upload = async (file?: File) => {
-    if (!file) return;
-    setUploading(true); setError(''); setUrl('');
-    try {
-      const response = await apiClient.uploadMedia(file);
-      setUrl(response.data?.url ?? '');
-    } catch {
-      setError('Նկարի վերբեռնումը չհաջողվեց։');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return (
-    <section className="rounded-[26px] border border-slate-200 bg-[#08111f] p-6 text-white shadow-sm">
-      <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-orange-400">Մեդիա</p>
-      <h3 className="mt-2 text-lg font-extrabold">Վերբեռնել նկար</h3>
-      <p className="mt-2 text-xs leading-5 text-slate-400">JPG, PNG կամ WEBP · մինչև 10MB</p>
-      <label className="mt-5 flex cursor-pointer items-center justify-center rounded-2xl border border-dashed border-white/20 bg-white/[.05] px-4 py-5 text-sm font-bold transition hover:border-orange-400/60 hover:bg-orange-500/10">
-        {uploading ? 'Վերբեռնվում է…' : 'Ընտրել նկար'}
-        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" disabled={uploading} onChange={(e) => void upload(e.target.files?.[0])} />
-      </label>
-      {url && <div className="mt-4 rounded-xl bg-white/[.07] p-3"><p className="break-all text-xs text-emerald-300">{url}</p><button type="button" onClick={() => navigator.clipboard?.writeText(url)} className="mt-2 text-xs font-bold text-white underline decoration-orange-500 underline-offset-4">Պատճենել URL-ը</button></div>}
-      {error && <p className="mt-3 text-xs font-medium text-red-300">{error}</p>}
-    </section>
-  );
-}
-
-function LocalizedFields({ title, value, multiline = false, onChange }: { title: string; value: Localized; multiline?: boolean; onChange: (lang: Lang, value: string) => void }) {
-  const [active, setActive] = useState<Lang>('hy');
-  return (
-    <section className="rounded-[26px] border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h3 className="text-lg font-extrabold text-slate-950">{title}</h3>
-        <div className="flex rounded-xl bg-slate-100 p-1">
-          {(['hy', 'en', 'ru'] as Lang[]).map((lang) => <button key={lang} type="button" onClick={() => setActive(lang)} className={`rounded-lg px-3 py-2 text-xs font-bold transition ${active === lang ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500'}`}>{langLabel[lang]}</button>)}
         </div>
       </div>
-      <div className="mt-5">
-        <label><span className="mb-2 block text-[10px] font-extrabold uppercase tracking-[.18em] text-slate-400">{langLabel[active]}</span>{multiline ? <textarea value={value[active]} onChange={(e) => onChange(active, e.target.value)} rows={4} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100" /> : <input value={value[active]} onChange={(e) => onChange(active, e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100" />}</label>
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur lg:left-[288px]">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
+          <p className="text-sm font-semibold text-slate-500">{dirty ? 'Կան չպահպանված փոփոխություններ' : 'Բոլոր փոփոխությունները պահպանված են'}</p>
+          <button type="button" onClick={() => void save()} disabled={saving || (!dirty && !isNew)} className="rounded-2xl bg-slate-950 px-7 py-3 text-sm font-extrabold text-white shadow-xl transition hover:bg-orange-500 disabled:opacity-40">{saving ? 'Պահպանվում է…' : 'Պահպանել'}</button>
+        </div>
       </div>
-    </section>
+    </LangFilterContext.Provider>
   );
 }

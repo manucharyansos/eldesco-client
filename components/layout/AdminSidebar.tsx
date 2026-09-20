@@ -12,6 +12,9 @@ const Icon = ({ type }: { type: string }) => {
     projects: <><path d="M3 8h18v11H3z"/><path d="M8 8V5h8v3"/></>,
     team: <><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c0-4 2.5-6 6-6s6 2 6 6M15 15c3 0 5 1.5 5 4"/></>,
     news: <><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></>,
+    settings: <><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></>,
+    navigation: <><path d="M4 6h16M4 12h10M4 18h16"/><path d="m17 10 3 2-3 2"/></>,
+    media: <><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 4 4 3-3 4 4"/></>,
   };
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -32,6 +35,12 @@ export function AdminSidebar() {
     { label: 'Նախագծեր', href: '/admin/projects', icon: 'projects' },
     { label: 'Թիմ', href: '/admin/team', icon: 'team' },
     { label: 'Նորություններ', href: '/admin/news', icon: 'news' },
+  ];
+
+  const siteItems = [
+    { label: 'Կայքի կարգավորումներ', href: '/admin/settings', icon: 'settings' },
+    { label: 'Մենյու', href: '/admin/navigation', icon: 'navigation' },
+    { label: 'Նկարների գրադարան', href: '/admin/media', icon: 'media' },
   ];
 
   const handleLogout = async () => {
@@ -60,14 +69,15 @@ export function AdminSidebar() {
         <p className="px-3 text-[10px] font-bold uppercase tracking-[.24em] text-slate-500">Կառավարում</p>
       </div>
 
-      <nav className="relative mt-3 flex-1 space-y-1.5 px-5">
-        {menuItems.map((item) => {
+      <nav className="relative mt-3 flex-1 space-y-1.5 overflow-y-auto px-5">
+        {[...menuItems, null, ...siteItems].map((item) => {
+          if (!item) return <p key="site-heading" className="px-3 pb-1 pt-5 text-[10px] font-bold uppercase tracking-[.24em] text-slate-500">Կայք</p>;
           const active = isActive(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`group flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-semibold transition-all ${
+              className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
                 active
                   ? 'bg-white text-slate-950 shadow-xl shadow-black/15'
                   : 'text-slate-300 hover:bg-white/[.07] hover:text-white'
