@@ -11,8 +11,6 @@ import { mediaUrl } from '@/lib/media';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 
-// Pages are regenerated at most once a minute (and immediately after an admin save).
-export const revalidate = 60;
 
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#0B2545' };
 
