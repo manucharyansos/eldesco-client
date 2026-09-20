@@ -12,7 +12,7 @@ type Props = { params: { locale: string } };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isLocale(params.locale)) return {};
   const page = await getPage('home', params.locale);
-  return pageMetadata({ locale: params.locale, path: '', title: null, description: page?.meta_description, image: firstImage(page) });
+  return pageMetadata({ locale: params.locale, path: '', title: page?.meta_title, absoluteTitle: true, description: page?.meta_description, image: firstImage(page) });
 }
 
 export default async function HomePage({ params }: Props) {

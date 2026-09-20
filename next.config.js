@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  // `BUILD_STANDALONE=1 npm run build` produces a self-contained folder (.next/standalone) that runs with plain `node server.js`.
+  output: process.env.BUILD_STANDALONE ? 'standalone' : undefined,
   images: {
     unoptimized: true,
   },

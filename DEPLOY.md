@@ -33,6 +33,14 @@ pm2 startup           # run the command it prints, so the site restarts after a 
 `NEXT_PUBLIC_*` values are compiled into the build. After changing `.env.production.local`, run `npm run build` again
 and `pm2 reload eldesco-web`.
 
+### Alternative: ready-made bundle (no npm/build on the server)
+
+`npm run pack` (on any machine with Node 18.17+) builds `dist/eldesco-web.tar.gz` - a self-contained folder that runs
+with plain `node server.js`. Upload it, extract, `pm2 start ecosystem.config.js`; the bundle contains its own
+`START.md`, pm2 config and nginx config. Domains are compiled in (`https://eldesco.am` / `https://api.eldesco.am/api`);
+for another domain: `NEXT_PUBLIC_API_URL=... NEXT_PUBLIC_SITE_URL=... npm run pack`.
+The bundle's server must run with `HOSTNAME=localhost` (already set in its `ecosystem.config.js`).
+
 ## 3. nginx + HTTPS
 
 ```bash
