@@ -3,14 +3,13 @@ import { API_URL, type Locale } from './config';
 import type { CmsPage, ProjectItem, ServiceItem, SiteData } from './cms-types';
 import { fallbackSite } from './defaults';
 
-/** Public content is cached for a minute and purged immediately when an admin saves (see /api/revalidate). */
+/** Public content loader. Static deploys resolve this during build; dev/SSR uses the same API source. */
 export const CMS_TAG = 'cms';
 
 async function get<T>(path: string): Promise<T | null> {
   try {
     const response = await fetch(`${API_URL}${path}`, {
-      headers: { Accept: 'application/json' },
-      next: { revalidate: 60, tags: [CMS_TAG] },
+      headers: { Accept: 'application/json' }
     });
     if (!response.ok) return null;
     return (await response.json()) as T;
