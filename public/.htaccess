@@ -1,0 +1,26 @@
+DirectoryIndex index.html
+Options -MultiViews
+RewriteEngine On
+
+# Main domain -> Armenian homepage.
+RewriteRule ^$ hy/ [R=302,L]
+
+# Admin always stays locale-neutral.
+RewriteRule ^(?:hy|en|ru)/admin/?$ admin/login/ [R=302,L]
+RewriteRule ^(?:hy|en|ru)/admin/(.*)$ admin/$1 [R=302,L]
+
+# Let Apache serve exported files and directories directly.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+ErrorDocument 404 /404.html
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  <FilesMatch "\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff2?)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
