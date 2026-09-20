@@ -1,70 +1,31 @@
 # ELDESCO Client
 
-Next.js frontend for ELDESCO LLC website with support for Armenian, English, and Russian languages, plus an integrated admin panel.
+Website and admin panel for ELDESCO LLC (Next.js 14, TypeScript, Tailwind) in Armenian, English and Russian.
+All visible content - texts, images, menus, footer, labels - lives in the Laravel API and is edited in the admin panel.
 
-## Features
+## Quick start (local)
 
-- **Multi-language Support**: Full i18n support for Armenian (hy), English (en), and Russian (ru)
-- **Admin Panel**: Manage services, projects, team members, news, and gallery
-- **Responsive Design**: Mobile-first design with TailwindCSS
-- **Type Safety**: Full TypeScript support
-- **API Integration**: Ready-to-use API client for Laravel backend
-- **Authentication**: JWT token-based authentication with Zustand state management
-- **Image Optimization**: Next.js Image component for optimized images
+Needs Node 18.17+ (20 recommended). The API lives in a separate repository, [eldesco-api](https://github.com/manucharyansos/eldesco-api).
 
-## Requirements
-
-- Node.js 18+
-- npm or yarn
-- Running Laravel API server
-
-## Installation
-
-1. Clone the repository:
 ```bash
+# once: the API (needs PHP 8.2+ and Composer), cloned next to this repo
+git clone https://github.com/manucharyansos/eldesco-api.git
+(cd eldesco-api && composer install && composer setup)
+
 git clone https://github.com/manucharyansos/eldesco-client.git
 cd eldesco-client
-```
-
-2. Install dependencies:
-```bash
 npm install
-# or
-yarn install
+npm run dev:all      # API on http://127.0.0.1:8000 + website on http://localhost:3000
 ```
 
-3. Configure environment:
-```bash
-cp .env.example .env.local
-```
+- Website: http://localhost:3000 - Admin panel: http://localhost:3000/admin
+- Only the website: `npm run dev` (uses `.env.local`, created from `.env.example`; without an API it shows built-in fallback content)
+- Checks: `npm run typecheck`, `npm run lint`, `npm run build`
 
-Edit `.env.local`:
-```
-NEXT_PUBLIC_API_URL=http://localhost:8000/api
-NEXT_PUBLIC_DEFAULT_LANGUAGE=en
-```
+## Production
 
-## Development
-
-Start the development server:
-```bash
-npm run dev
-# or
-yarn dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Build
-
-Create an optimized production build:
-```bash
-npm run build
-npm start
-# or
-yarn build
-yarn start
-```
+See [DEPLOY.md](DEPLOY.md) - step-by-step guide for https://eldesco.am (nginx, pm2, HTTPS, updates).
+`NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_SITE_URL` are compiled into the build (`.env.production.example`).
 
 ## Project Structure
 
@@ -98,178 +59,33 @@ public/images/                # brand logos, presentation photos (deck/), custom
 Everything visible on the site - texts, images, menus, footer, labels - is stored in the API and edited
 in the admin panel. `lib/defaults.ts` only supplies defaults so the site still renders if the API is down.
 
-## Production deployment (https://eldesco.am)
+## How content works
 
-```bash
-cp .env.example .env.production.local   # set NEXT_PUBLIC_API_URL=https://api.eldesco.am/api
-                                        #     NEXT_PUBLIC_SITE_URL=https://eldesco.am
-npm ci || npm install
-npm run build          # NEXT_PUBLIC_* values are baked in at build time
-npm start -- -p 3000   # keep alive with pm2 / systemd
-```
+- **Pages** are built from sections (hero, text, gallery, customers, ...). Every section type is described once in
+  `lib/adminSchemas.ts`; the admin form editor and the renderers (`components/cms/SectionRenderer.tsx`) follow it.
+  To add a section type: describe it in `adminSchemas.ts`, then add a `case` in `SectionRenderer.tsx`.
+- **Site-wide content** (company data, contacts, logo, footer text, menus, interface labels) comes from `/api/site`
+  and is edited under *Site settings* and *Menu* in the admin.
+- **Interface labels** have defaults in `lib/defaults.ts` (`UI_DEFAULTS`); the admin can override any of them.
+  Add a new label there and use it with `makeUi(...)`.
+- **Services** are shared by the home page, the services page and the menu; each service's detail page is the CMS page
+  with the same slug (`/services/<slug>`).
+- **Images**: static assets live in `public/images/` (brand, `deck/` presentation photos, `customers/` logos);
+  uploaded files are served by the API (`/storage/...`). The admin image picker offers both.
+- **Caching**: public content is cached for 60 seconds and purged immediately after each admin save (`app/api/revalidate`).
+- **Languages**: `hy`, `en`, `ru` (`lib/config.ts`, routing in `middleware.ts`).
 
-Nginx in front of `next start`:
+## Admin panel
 
-```nginx
-server {
-    server_name eldesco.am www.eldesco.am;
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-```
-
-Redirect `www` to the apex domain (or the other way round) and add TLS with certbot.
-The admin panel lives at https://eldesco.am/admin. The API must list `https://eldesco.am` in `CORS_ALLOWED_ORIGINS`.
-
-## API Integration
-
-The application uses the `apiClient` from `lib/api.ts` for all backend communication:
-
-```typescript
-import { apiClient } from '@/lib/api';
-
-// Get services in a specific language
-const response = await apiClient.getServices('hy');
-
-// Login
-await apiClient.login('admin@eldesco.am', 'password');
-
-// Create a news item (requires auth)
-await apiClient.createNews({
-  title_en: 'New Project Launch',
-  content_en: 'Content...',
-  published: true
-});
-```
-
-## Authentication
-
-Login is managed with Zustand store:
-
-```typescript
-import { useAuthStore } from '@/lib/auth/store';
-
-export function LoginPage() {
-  const { login, isLoading, error } = useAuthStore();
-
-  const handleLogin = async (email: string, password: string) => {
-    try {
-      await login(email, password);
-      // Redirect to admin
-    } catch (err) {
-      // Show error
-    }
-  };
-
-  return (
-    // Login form...
-  );
-}
-```
-
-## Styling
-
-Using TailwindCSS with custom theme:
-
-```jsx
-// Primary color (dark blue-grey)
-<div className="bg-primary-500 text-white">
-
-// Accent color (orange)
-<button className="bg-accent-500 hover:bg-accent-600">
-
-// Custom utilities
-<h1 className="text-4xl font-serif font-bold">
-```
-
-## Internationalization
-
-All text is managed through JSON translation files in `lib/messages/`:
-
-```json
-// lib/messages/en.json
-{
-  "common": {
-    "appName": "ELDESCO",
-    "home": "Home"
-  }
-}
-```
-
-Use translations in components:
-
-```typescript
-import { useTranslations } from 'next-intl';
-
-export function Component() {
-  const t = useTranslations('common');
-  return <h1>{t('appName')}</h1>;
-}
-```
-
-## Adding New Languages
-
-1. Create new translation file: `lib/messages/{lang_code}.json`
-2. Add language code to `locales` array in `lib/i18n/request.ts`
-3. Update `next.config.js` if needed
-4. Update language selector in navbar
-
-## Image Handling
-
-Images are optimized using Next.js Image component:
-
-```typescript
-import Image from 'next/image';
-
-<Image
-  src="/images/project.jpg"
-  alt="Project name"
-  width={800}
-  height={600}
-  priority
-/>
-```
-
-## Performance Tips
-
-- Use Next.js Image component for all images
-- Implement lazy loading for off-screen content
-- Use dynamic imports for heavy components
-- Enable compression in production
-- Optimize bundle size with code splitting
-
-## Deployment
-
-Build for production and deploy:
-
-```bash
-npm run build
-npm start
-```
-
-Or use Vercel, Netlify, or your preferred hosting platform.
+`/admin` (Armenian interface): pages, services, projects, team, news, gallery, site settings, menus, image library.
+Only users with the `admin` role can sign in.
 
 ## Troubleshooting
 
-### API Connection Issues
-- Ensure Laravel backend is running on `http://localhost:8000`
-- Check CORS configuration in Laravel
-- Verify `NEXT_PUBLIC_API_URL` in `.env.local`
-
-### Language Not Switching
-- Clear browser cache
-- Verify language codes in URL
-- Check `lib/messages/` files exist
-
-### Admin Panel Not Loading
-- Verify authentication token is valid
-- Check user role is 'admin'
-- Clear localStorage if issues persist
+- **Site shows a short fallback home page** - the API is not reachable; check `NEXT_PUBLIC_API_URL`.
+- **Admin cannot log in / CORS error** - the API must allow the site origin in `CORS_ALLOWED_ORIGINS`.
+- **Changed `.env.production.local` but nothing happened** - `NEXT_PUBLIC_*` are baked into the build; rebuild.
 
 ## License
 
-ELDESCO LLC © 2024. All rights reserved.
+ELDESCO LLC. All rights reserved.
