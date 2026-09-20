@@ -21,4 +21,13 @@ cp -r public "$OUT/public"
 cp deploy/bundle/* "$OUT/"
 
 tar -czf dist/eldesco-web.tar.gz -C dist eldesco-web
-echo "==> Ready: dist/eldesco-web.tar.gz ($(du -h dist/eldesco-web.tar.gz | cut -f1))"
+echo "==> VPS bundle:   dist/eldesco-web.tar.gz ($(du -h dist/eldesco-web.tar.gz | cut -f1))"
+
+# cPanel / shared hosting: site folder + tiny Node.js Selector entry point, as one zip
+CP=dist/cpanel
+mkdir -p "$CP/eldesco-app"
+cp -r "$OUT" "$CP/eldesco-web"
+cp deploy/cpanel/app.js "$CP/eldesco-app/app.js"
+cp deploy/cpanel/README-CPANEL.md "$CP/README-CPANEL.md"
+( cd "$CP" && python3 -m zipfile -c ../eldesco-cpanel.zip eldesco-web eldesco-app README-CPANEL.md )
+echo "==> cPanel bundle: dist/eldesco-cpanel.zip ($(du -h dist/eldesco-cpanel.zip | cut -f1))"
