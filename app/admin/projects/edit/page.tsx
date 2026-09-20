@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 
 type Lang = 'hy' | 'en' | 'ru';
@@ -11,8 +11,8 @@ const displayImage = (url?: string | null) => url?.startsWith('/storage/') ? `${
 
 export default function AdminProjectEditPage() {
   const router = useRouter();
-  const params = useParams<{ id?: string }>();
-  const projectId = params.id || 'new';
+  const searchParams = useSearchParams();
+  const projectId = searchParams.get('id') || 'new';
   const isEditMode = projectId !== 'new';
 
   const [loading, setLoading] = useState(isEditMode);
