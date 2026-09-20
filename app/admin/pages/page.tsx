@@ -50,7 +50,7 @@ export default function PagesManager() {
           <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Կայքի էջեր</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">Կառավարիր էջերի վերնագրերը, SEO-ն, բաժինները և երեք լեզուների բովանդակությունը մեկ տեղից։</p>
         </div>
-        <Link href="/admin/pages/new" className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-extrabold text-white shadow-xl shadow-slate-950/10 transition hover:bg-orange-500">
+        <Link href="/admin/pages/edit" className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-extrabold text-white shadow-xl shadow-slate-950/10 transition hover:bg-orange-500">
           <span className="text-lg leading-none">+</span> Նոր էջ
         </Link>
       </div>
@@ -84,7 +84,7 @@ export default function PagesManager() {
                 </span>
               </div>
               <div className="flex gap-2 md:justify-end">
-                <Link href={`/admin/pages/${page.id}`} className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:border-orange-200 hover:text-orange-600">Խմբագրել</Link>
+                <Link href={`/admin/pages/edit?id=${page.id}`} className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:border-orange-200 hover:text-orange-600">Խմբագրել</Link>
                 {page.slug !== 'home' && <button onClick={() => void remove(page.id)} className="rounded-xl border border-red-100 bg-white px-3.5 py-2 text-xs font-bold text-red-500 transition hover:bg-red-50">Ջնջել</button>}
               </div>
             </div>
