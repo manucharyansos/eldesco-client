@@ -1,11 +1,17 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getPage, getSite } from '@/lib/cms';
-import { isLocale } from '@/lib/config';
+import { LOCALES, isLocale } from '@/lib/config';
 import { firstImage, pageMetadata } from '@/lib/seo';
 import { PageView } from '@/components/cms/PageView';
 
 type Props = { params: { locale: string; slug: string } };
+
+const STATIC_PAGES = ['about', 'customers', 'contact'] as const;
+
+export function generateStaticParams() {
+  return LOCALES.flatMap((locale) => STATIC_PAGES.map((slug) => ({ locale, slug })));
+}
 
 /** Any page created in the admin panel is served here (about, customers, contact, ...). */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
