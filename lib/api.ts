@@ -133,7 +133,7 @@ class ApiClient {
     if (alt?.hy) form.append('alt_hy', alt.hy);
     if (alt?.en) form.append('alt_en', alt.en);
     if (alt?.ru) form.append('alt_ru', alt.ru);
-    return this.client.post('/admin/media', form);
+    return this.client.post('/admin/media', form, { timeout: 120000 }); // photos can be several MB
   }
 
   getAdminSite() { return this.client.get<AdminSite>('/admin/site'); }
