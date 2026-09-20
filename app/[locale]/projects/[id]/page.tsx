@@ -1,13 +1,25 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getProject, getSite } from '@/lib/cms';
-import { isLocale } from '@/lib/config';
+import { getProject, getProjects, getSite } from '@/lib/cms';
+import { LOCALES, isLocale } from '@/lib/config';
 import { makeUi } from '@/lib/defaults';
 import { pageMetadata } from '@/lib/seo';
 import { Img } from '@/components/common/Img';
 
 type Props = { params: { locale: string; id: string } };
+
+export async function generateStaticParams() {
+  const params: { locale: string; id: string }[] = [];
+  for (const locale of LOCALES) {
+    const projects = await getProjects(locale);
+    for (const project of projects) params.push({ locale, id: String(project.id) });
+  }
+  if (!params.length) {
+    for (const locale of LOCALES) for (const id of ['1', '2', '3', '4', '5']) params.push({ locale, id });
+  }
+  return params;
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isLocale(params.locale)) return {};
