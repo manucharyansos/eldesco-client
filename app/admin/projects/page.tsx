@@ -41,7 +41,7 @@ export default function AdminProjectsPage() {
     <div className="space-y-7">
       <div className="flex flex-wrap items-end justify-between gap-5">
         <div><p className="text-[11px] font-extrabold uppercase tracking-[.24em] text-orange-600">Պորտֆոլիո</p><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Նախագծեր</h2><p className="mt-3 text-sm text-slate-500">Ավելացրու իրականացված աշխատանքները, նկարները, կատեգորիաները և երեք լեզուների նկարագրությունները։</p></div>
-        <Link href="/admin/projects/edit/new" className="rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-extrabold text-white shadow-xl transition hover:bg-orange-500">+ Նոր նախագիծ</Link>
+        <Link href="/admin/projects/edit" className="rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-extrabold text-white shadow-xl transition hover:bg-orange-500">+ Նոր նախագիծ</Link>
       </div>
 
       {error && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
@@ -58,7 +58,7 @@ export default function AdminProjectsPage() {
               <div className="p-5">
                 <div className="flex items-start justify-between gap-3"><h3 className="text-lg font-extrabold leading-6 text-slate-950">{project.title_hy || project.title_en}</h3><span className="text-[10px] font-bold text-slate-400">#{project.order_index ?? index + 1}</span></div>
                 <p className="mt-2 line-clamp-2 min-h-10 text-xs leading-5 text-slate-500">{project.description_hy || 'Նկարագրություն չկա'}</p>
-                <div className="mt-5 flex gap-2 border-t border-slate-100 pt-4"><Link href={`/admin/projects/edit/${project.id}`} className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-center text-xs font-bold text-slate-700 transition hover:border-orange-200 hover:text-orange-600">Խմբագրել</Link><button onClick={() => void remove(project.id)} disabled={deleting === project.id} className="rounded-xl border border-red-100 px-3 py-2.5 text-xs font-bold text-red-500 transition hover:bg-red-50 disabled:opacity-50">{deleting === project.id ? '…' : 'Ջնջել'}</button></div>
+                <div className="mt-5 flex gap-2 border-t border-slate-100 pt-4"><Link href={`/admin/projects/edit?id=${project.id}`} className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-center text-xs font-bold text-slate-700 transition hover:border-orange-200 hover:text-orange-600">Խմբագրել</Link><button onClick={() => void remove(project.id)} disabled={deleting === project.id} className="rounded-xl border border-red-100 px-3 py-2.5 text-xs font-bold text-red-500 transition hover:bg-red-50 disabled:opacity-50">{deleting === project.id ? '…' : 'Ջնջել'}</button></div>
               </div>
             </article>
           ))}
