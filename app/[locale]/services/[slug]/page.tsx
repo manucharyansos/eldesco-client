@@ -1,11 +1,23 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getPage, getSite } from '@/lib/cms';
-import { isLocale } from '@/lib/config';
+import { LOCALES, isLocale } from '@/lib/config';
 import { firstImage, pageMetadata } from '@/lib/seo';
 import { PageView } from '@/components/cms/PageView';
 
 type Props = { params: { locale: string; slug: string } };
+
+const SERVICE_SLUGS = [
+  'power-infrastructure',
+  'industrial-infrastructure',
+  'led-displays',
+  'refrigeration',
+  'sheet-metal-processing',
+] as const;
+
+export function generateStaticParams() {
+  return LOCALES.flatMap((locale) => SERVICE_SLUGS.map((slug) => ({ locale, slug })));
+}
 
 /** A service detail page is the CMS page with the same slug as the service. */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
