@@ -35,11 +35,16 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const cleanPathname = pathname.replace(/\/+$/, '') || '/';
-  const { isAuthenticated, isLoading, checkAuth, user } = useAuthStore();
+  const { isAuthenticated, isLoading, checkAuth, logout, user } = useAuthStore();
   const isLoginPage = cleanPathname === '/admin/login';
 
   useEffect(() => { if (!isLoginPage) void checkAuth(); }, [checkAuth, isLoginPage]);
   useEffect(() => { if (!isLoginPage && !isLoading && !isAuthenticated) router.replace('/admin/login'); }, [isLoginPage, isLoading, isAuthenticated, router]);
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/admin/login/');
+  };
 
   if (isLoginPage) return <>{children}</>;
   if (isLoading) return <Loading />;
@@ -57,6 +62,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
             </div>
             <div className="flex items-center gap-3">
               <Link href="/hy" target="_blank" rel="noreferrer" className="hidden rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:inline-flex">Բացել կայքը ↗</Link>
+              <button
+                type="button"
+                onClick={() => void handleLogout()}
+                aria-label="Դուրս գալ"
+                className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-extrabold text-red-700 transition hover:bg-red-100 lg:hidden"
+              >
+                Ելք
+              </button>
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-950 text-sm font-extrabold text-white shadow-lg shadow-slate-950/10">{(user?.email || 'A').slice(0, 1).toUpperCase()}</div>
             </div>
           </div>
