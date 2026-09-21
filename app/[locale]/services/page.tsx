@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getPage, getSite } from '@/lib/cms';
+import { getPage, getServices } from '@/lib/cms';
 import { isLocale } from '@/lib/config';
 import { firstImage, pageMetadata } from '@/lib/seo';
-import { PageView } from '@/components/cms/PageView';
+import { LiveCmsPage } from '@/components/live/LivePages';
 
 type Props = { params: { locale: string } };
 
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ServicesPage({ params }: Props) {
   if (!isLocale(params.locale)) notFound();
-  const [page, site] = await Promise.all([getPage('services', params.locale), getSite(params.locale)]);
+  const [page, services] = await Promise.all([getPage('services', params.locale), getServices(params.locale)]);
   if (!page) notFound();
-  return <PageView page={page} locale={params.locale} site={site} />;
+  return <LiveCmsPage locale={params.locale} slug="services" initialPage={page} initialServices={services} />;
 }

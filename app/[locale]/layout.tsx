@@ -6,10 +6,8 @@ import '@fontsource-variable/noto-sans-armenian';
 import '../globals.css';
 import { HTML_LANG, LOCALES, OG_LOCALE, SITE_URL, isLocale } from '@/lib/config';
 import { getSite, str } from '@/lib/cms';
-import { makeUi } from '@/lib/defaults';
 import { mediaUrl } from '@/lib/media';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+import { LiveSiteShell } from '@/components/live/LiveSiteShell';
 
 
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#0B2545' };
@@ -46,17 +44,11 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const site = await getSite(locale);
-  const ui = makeUi(site.settings, locale);
 
   return (
     <html lang={HTML_LANG[locale]}>
       <body className="flex min-h-screen flex-col">
-        <a href="#content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:font-bold focus:text-navy-800">
-          {ui('skip_to_content')}
-        </a>
-        <Header site={site} locale={locale} />
-        <main id="content" className="flex-1">{children}</main>
-        <Footer site={site} locale={locale} />
+        <LiveSiteShell initialSite={site} locale={locale}>{children}</LiveSiteShell>
       </body>
     </html>
   );

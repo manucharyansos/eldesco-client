@@ -1,16 +1,17 @@
 import Link from 'next/link';
-import type { CmsSection, SiteData } from '@/lib/cms-types';
+import type { CmsSection, ServiceItem, SiteData } from '@/lib/cms-types';
 import type { Locale } from '@/lib/config';
-import { getServices, str } from '@/lib/cms';
+import { str } from '@/lib/cms';
 import { makeUi } from '@/lib/defaults';
 import { formatPhone, localizedHref, telHref } from '@/lib/nav';
 import { Img } from '@/components/common/Img';
 import { Hero } from '@/components/sections/Hero';
 import { GalleryClient, type GalleryImage } from '@/components/sections/GalleryClient';
 
-type Props = { section: CmsSection; locale: Locale; site: SiteData; pageTitle?: string };
+type Props = { section: CmsSection; locale: Locale; site: SiteData; pageTitle?: string; services?: ServiceItem[] };
 
 const list = (v: unknown): any[] => (Array.isArray(v) ? v : []);
+const EMPTY_SERVICES: ServiceItem[] = [];
 const paragraphsOf = (c: Record<string, any>) => {
   const p = list(c.paragraphs).map(str).filter(Boolean);
   return p.length ? p : [str(c.description)].filter(Boolean);
@@ -26,7 +27,7 @@ function SectionHead({ title, subtitle, dark }: { title: string; subtitle?: stri
   );
 }
 
-export async function SectionRenderer({ section, locale, site, pageTitle }: Props) {
+export function SectionRenderer({ section, locale, site, pageTitle, services = EMPTY_SERVICES }: Props) {
   if (!section.is_enabled) return null;
   const c = section.content ?? {};
   const s = site.settings;
@@ -88,7 +89,6 @@ export async function SectionRenderer({ section, locale, site, pageTitle }: Prop
     }
 
     case 'services': {
-      const services = await getServices(locale);
       if (!services.length) return null;
       return (
         <section className="section">

@@ -1,12 +1,13 @@
-import type { CmsPage, SiteData } from '@/lib/cms-types';
+import type { CmsPage, ServiceItem, SiteData } from '@/lib/cms-types';
 import type { Locale } from '@/lib/config';
 import { makeUi } from '@/lib/defaults';
 import { SectionRenderer } from './SectionRenderer';
 
 const HERO_TYPES = ['hero', 'page_hero'];
+const EMPTY_SERVICES: ServiceItem[] = [];
 
 /** Renders a CMS page. If the page has no hero section, a plain title header is shown so every page has an <h1>. */
-export async function PageView({ page, locale, site }: { page: CmsPage; locale: Locale; site: SiteData }) {
+export function PageView({ page, locale, site, services = EMPTY_SERVICES }: { page: CmsPage; locale: Locale; site: SiteData; services?: ServiceItem[] }) {
   const sections = [...page.sections].filter((x) => x.is_enabled).sort((a, b) => a.sort_order - b.sort_order);
   const hasHero = sections.some((x) => HERO_TYPES.includes(x.type));
   const ui = makeUi(site.settings, locale);
@@ -26,7 +27,7 @@ export async function PageView({ page, locale, site }: { page: CmsPage; locale: 
         <section className="section"><div className="container"><p className="lead">{ui('no_items')}</p></div></section>
       )}
       {sections.map((section) => (
-        <SectionRenderer key={section.id} section={section} locale={locale} site={site} pageTitle={page.title} />
+        <SectionRenderer key={section.id} section={section} locale={locale} site={site} pageTitle={page.title} services={services} />
       ))}
     </>
   );

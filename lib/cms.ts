@@ -37,6 +37,10 @@ export const getPage = cache(async (slug: string, locale: Locale): Promise<CmsPa
   return get<CmsPage>(`/pages/${encodeURIComponent(slug)}?lang=${locale}`);
 });
 
+export const getPages = cache(async (locale: Locale): Promise<CmsPage[]> => {
+  return (await get<CmsPage[]>(`/pages?lang=${locale}`)) ?? [];
+});
+
 export const getServices = cache(async (locale: Locale): Promise<ServiceItem[]> => {
   return (await get<ServiceItem[]>(`/services?lang=${locale}`)) ?? [];
 });

@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 
 import { API_URL } from './config';
+import { announceCmsUpdate } from './live';
 
 export interface CmsSection {
   id: number;
@@ -67,8 +68,8 @@ class ApiClient {
       (response) => {
         const method = (response.config.method || 'get').toLowerCase();
         const url = response.config.url || '';
-        // Any successful admin write purges the public site cache so visitors see it immediately.
-        if (method !== 'get' && !url.startsWith('/auth') && !url.startsWith('/admin/media')) this.scheduleRevalidate();
+        // Any successful admin write tells open public pages to fetch the latest API payload.
+        if (method !== 'get' && !url.startsWith('/auth')) this.scheduleRevalidate();
         return response;
       },
       (error) => {
@@ -87,9 +88,7 @@ class ApiClient {
     if (typeof window === 'undefined') return;
     if (this.revalidateTimer) clearTimeout(this.revalidateTimer);
     this.revalidateTimer = setTimeout(() => {
-      const token = this.getToken();
-      if (!token) return;
-      void fetch('/api/revalidate', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }).catch(() => undefined);
+      announceCmsUpdate();
     }, 400);
   }
 
