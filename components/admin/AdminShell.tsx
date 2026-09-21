@@ -34,8 +34,9 @@ const mobileNav = [
 export function AdminShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const cleanPathname = pathname.replace(/\/+$/, '') || '/';
   const { isAuthenticated, isLoading, checkAuth, user } = useAuthStore();
-  const isLoginPage = pathname === '/admin/login';
+  const isLoginPage = cleanPathname === '/admin/login';
 
   useEffect(() => { if (!isLoginPage) void checkAuth(); }, [checkAuth, isLoginPage]);
   useEffect(() => { if (!isLoginPage && !isLoading && !isAuthenticated) router.replace('/admin/login'); }, [isLoginPage, isLoading, isAuthenticated, router]);
@@ -52,7 +53,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <div className="flex min-h-[76px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-10">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[.24em] text-orange-600">ELDESCO CMS</p>
-              <h1 className="mt-1 text-lg font-bold tracking-tight sm:text-xl">{pageTitle(pathname)}</h1>
+              <h1 className="mt-1 text-lg font-bold tracking-tight sm:text-xl">{pageTitle(cleanPathname)}</h1>
             </div>
             <div className="flex items-center gap-3">
               <Link href="/hy" target="_blank" rel="noreferrer" className="hidden rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:inline-flex">Բացել կայքը ↗</Link>
@@ -61,7 +62,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </div>
           <nav className="flex gap-2 overflow-x-auto border-t border-slate-100 px-4 py-3 lg:hidden">
             {mobileNav.map(([href,label]) => {
-              const active = pathname === href || pathname.startsWith(`${href}/`);
+              const active = cleanPathname === href || cleanPathname.startsWith(`${href}/`);
               return <Link key={href} href={href} className={`whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-bold transition ${active ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-600'}`}>{label}</Link>;
             })}
           </nav>

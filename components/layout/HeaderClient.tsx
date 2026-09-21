@@ -115,7 +115,7 @@ export function HeaderClient({ locale, logo, companyName, items, phone, phoneHre
       </div>
 
       {open && (
-        <div id="mobile-menu" className="fixed inset-x-0 bottom-0 overflow-y-auto border-t border-steel-200 bg-white lg:hidden" style={{ top: 'var(--header-h)' }}>
+        <div id="mobile-menu" className="absolute inset-x-0 top-full h-[calc(100dvh-var(--header-h))] overflow-y-auto border-t border-steel-200 bg-white shadow-2xl lg:hidden">
           <div className="container py-6">
             <ul className="divide-y divide-steel-200">
               {items.map((item) => (

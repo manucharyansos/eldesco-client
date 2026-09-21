@@ -26,6 +26,7 @@ const Icon = ({ type }: { type: string }) => {
 export function AdminSidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const cleanPathname = pathname.replace(/\/+$/, '') || '/';
   const { logout, user } = useAuthStore();
 
   const menuItems = [
@@ -48,7 +49,7 @@ export function AdminSidebar() {
     router.push('/admin/login');
   };
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) => cleanPathname === href || cleanPathname.startsWith(`${href}/`);
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[288px] overflow-hidden bg-[#08111f] text-white lg:flex lg:flex-col">
