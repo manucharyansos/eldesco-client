@@ -251,9 +251,19 @@ export function SectionRenderer({ section, locale, site, pageTitle, services = E
 
     case 'company_details': {
       const pick = (key: string, alt?: string) => str(s[key]) || (alt ? str(c[alt]) : '');
+      const configuredRows = list(c.rows)
+        .filter((row) => row && typeof row === 'object' && row.is_visible !== false)
+        .map((row) => {
+          const source = str(row.source);
+          const label = str(row.label);
+          let value = source === 'custom' ? str(row.value) : pick(source);
+          if (source === 'contact.phone' && value) value = formatPhone(value);
+          return [label, value] as [string, React.ReactNode];
+        })
+        .filter(([label, value]) => label && value);
       const accounts = [pick('bank.account_amd'), pick('bank.account_usd'), pick('bank.account_eur')].filter(Boolean);
       const legacyAccounts = list(c.accounts).map(str).filter(Boolean);
-      const rows: Array<[string, React.ReactNode]> = [
+      const legacyRows: Array<[string, React.ReactNode]> = [
         [ui('company'), pick('company.name', 'company')],
         [ui('tax_id'), pick('company.tax_id', 'tax_id')],
         [ui('registration'), pick('company.registration', 'registration')],
@@ -266,6 +276,7 @@ export function SectionRenderer({ section, locale, site, pageTitle, services = E
         [str(s['company.director_position']) || ui('director'), pick('company.director', 'director')],
         [str(s['company.chief_accountant_position']) || ui('chief_accountant'), pick('company.chief_accountant', 'chief_accountant')],
       ].filter(([label, value]) => label && value && !(Array.isArray(value) && !value.length)) as Array<[string, React.ReactNode]>;
+      const rows = Array.isArray(c.rows) ? configuredRows : legacyRows;
       return (
         <section className="section band-wash">
           <div className="container">
