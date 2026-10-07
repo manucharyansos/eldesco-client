@@ -129,8 +129,36 @@ export const SECTION_SCHEMAS: SectionSchema[] = [
     fields: [loc('title', 'Վերնագիր'), locArea('description', 'Նկարագրություն')],
   },
   {
-    type: 'company_details', label: 'Կազմակերպության տվյալներ', description: 'Ռեկվիզիտներ (տվյալները վերցվում են «Կարգավորումներից»)',
-    fields: [loc('title', 'Վերնագիր')],
+    type: 'company_details', label: 'Կազմակերպության տվյալներ', description: 'Ընտրեք՝ որ տվյալները ցուցադրվեն, փոխեք անվանումն ու հերթականությունը',
+    fields: [
+      loc('title', 'Վերնագիր'),
+      {
+        type: 'list', key: 'rows', label: 'Ցուցադրվող տողեր', addLabel: '+ Ավելացնել տող', titleKey: 'label',
+        fields: [
+          { type: 'toggle', key: 'is_visible', label: 'Ցուցադրել կայքում' },
+          loc('label', 'Տողի անվանումը'),
+          {
+            type: 'select', key: 'source', label: 'Տողի արժեքը', options: [
+              { value: 'company.name', label: 'Կազմակերպության անվանումը' },
+              { value: 'company.tax_id', label: 'ՀՎՀՀ' },
+              { value: 'company.registration', label: 'Պետ. գրանցման համար' },
+              { value: 'contact.business_address', label: 'Գործնական հասցե' },
+              { value: 'contact.legal_address', label: 'Իրավաբանական հասցե' },
+              { value: 'bank.name', label: 'Բանկ' },
+              { value: 'bank.account_amd', label: 'Հաշվարկային հաշիվ (AMD)' },
+              { value: 'bank.account_usd', label: 'Հաշվարկային հաշիվ (USD)' },
+              { value: 'bank.account_eur', label: 'Հաշվարկային հաշիվ (EUR)' },
+              { value: 'contact.phone', label: 'Հեռախոս' },
+              { value: 'contact.email', label: 'Էլեկտրոնային փոստ' },
+              { value: 'company.director', label: 'Ղեկավար' },
+              { value: 'company.chief_accountant', label: 'Հաշվապահ' },
+              { value: 'custom', label: 'Այլ՝ ձեռքով գրված արժեք' },
+            ],
+          },
+          loc('value', 'Այլ արժեք', 'Լրացրեք միայն «Այլ՝ ձեռքով գրված արժեք» ընտրելու դեպքում'),
+        ],
+      },
+    ],
   },
 ];
 
@@ -152,6 +180,24 @@ export function emptyContent(type: string): Record<string, unknown> {
     case 'timeline': return { title: { ...tri }, items: [] };
     case 'bullets': return { title: { ...tri }, items: [{ ...tri }] };
     case 'hero': return { eyebrow: { ...tri }, title: { ...tri }, subtitle: { ...tri }, cta_label: { ...tri }, cta_url: '/services', cta2_label: { ...tri }, cta2_url: '/contact', image: '', slides: [] };
+    case 'company_details': return {
+      title: { ...tri },
+      rows: [
+        { is_visible: true, label: { hy: 'Կազմակերպություն', en: 'Company', ru: 'Организация' }, source: 'company.name', value: { ...tri } },
+        { is_visible: true, label: { hy: 'ՀՎՀՀ', en: 'Tax ID', ru: 'ИНН' }, source: 'company.tax_id', value: { ...tri } },
+        { is_visible: true, label: { hy: 'Պետ. գրանցման համար', en: 'Registration number', ru: 'Регистрационный номер' }, source: 'company.registration', value: { ...tri } },
+        { is_visible: true, label: { hy: 'Գործնական հասցե', en: 'Business address', ru: 'Фактический адрес' }, source: 'contact.business_address', value: { ...tri } },
+        { is_visible: true, label: { hy: 'Իրավ. հասցե', en: 'Legal address', ru: 'Юридический адрес' }, source: 'contact.legal_address', value: { ...tri } },
+        { is_visible: true, label: { hy: 'Բանկ', en: 'Bank', ru: 'Банк' }, source: 'bank.name', value: { ...tri } },
+        { is_visible: true, label: { hy: 'Հաշվարկային հաշիվ (AMD)', en: 'Bank account (AMD)', ru: 'Расчётный счёт (AMD)' }, source: 'bank.account_amd', value: { ...tri } },
+        { is_visible: true, label: { hy: 'Հաշվարկային հաշիվ (USD)', en: 'Bank account (USD)', ru: 'Расчётный счёт (USD)' }, source: 'bank.account_usd', value: { ...tri } },
+        { is_visible: true, label: { hy: 'Հաշվարկային հաշիվ (EUR)', en: 'Bank account (EUR)', ru: 'Расчётный счёт (EUR)' }, source: 'bank.account_eur', value: { ...tri } },
+        { is_visible: true, label: { hy: 'Հեռախոս', en: 'Phone', ru: 'Телефон' }, source: 'contact.phone', value: { ...tri } },
+        { is_visible: true, label: { hy: 'Էլ. փոստ', en: 'Email', ru: 'Эл. почта' }, source: 'contact.email', value: { ...tri } },
+        { is_visible: true, label: { hy: 'Տնօրեն', en: 'Director', ru: 'Директор' }, source: 'company.director', value: { ...tri } },
+        { is_visible: true, label: { hy: 'Հաշվապահ', en: 'Chief accountant', ru: 'Главный бухгалтер' }, source: 'company.chief_accountant', value: { ...tri } },
+      ],
+    };
     default: return { title: { ...tri } };
   }
 }
